@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { ExerciseLog, SetLog } from '../lib/types'
 import { generateId } from '../lib/id'
 import { youtubeSearchUrl } from '../lib/youtube'
+import { getBuiltInSubstitutes } from '../lib/substitutes'
 import { Badge, Card } from './ui'
 
 export interface ExerciseSuggestionView {
@@ -15,9 +16,11 @@ interface Props {
   exercise: ExerciseLog
   detail?: string
   suggestion?: ExerciseSuggestionView | null
+  customSubstitutes?: string[]
   onAddSet: (set: SetLog) => void
   onUpdateSet: (setId: string, patch: Partial<SetLog>) => void
   onDeleteSet: (setId: string) => void
+  onSwapExercise?: (newName: string) => void
 }
 
 function NumberField({
@@ -63,11 +66,25 @@ function NumberField({
   )
 }
 
-export function ExerciseCard({ exercise, detail, suggestion, onAddSet, onUpdateSet, onDeleteSet }: Props) {
+export function ExerciseCard({
+  exercise,
+  detail,
+  suggestion,
+  customSubstitutes = [],
+  onAddSet,
+  onUpdateSet,
+  onDeleteSet,
+  onSwapExercise,
+}: Props) {
   const [newSet, setNewSet] = useState({ load: '', reps: '', rpe: '' })
   const [resetKey, setResetKey] = useState(0)
+  const [showSubstitutes, setShowSubstitutes] = useState(false)
 
   const canAdd = newSet.load !== '' && newSet.reps !== '' && newSet.rpe !== ''
+
+  const substituteOptions = [...customSubstitutes, ...getBuiltInSubstitutes(exercise)].filter(
+    (s, idx, arr) => arr.indexOf(s) === idx && s.toLowerCase() !== exercise.name.toLowerCase(),
+  )
 
   const handleAdd = () => {
     if (!canAdd) return
@@ -100,6 +117,35 @@ export function ExerciseCard({ exercise, detail, suggestion, onAddSet, onUpdateS
           ▶ ver execução
         </a>
       </div>
+
+      {onSwapExercise && substituteOptions.length > 0 && (
+        <div>
+          <button
+            type="button"
+            onClick={() => setShowSubstitutes((v) => !v)}
+            className="text-xs font-medium text-slate-400 underline decoration-dotted active:text-slate-200"
+          >
+            🔄 Não consigo/não sei fazer este — ver substitutos
+          </button>
+          {showSubstitutes && (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {substituteOptions.map((sub) => (
+                <button
+                  key={sub}
+                  type="button"
+                  onClick={() => {
+                    onSwapExercise(sub)
+                    setShowSubstitutes(false)
+                  }}
+                  className="rounded-full border border-slate-700 bg-slate-900 px-2.5 py-1 text-xs text-slate-300 active:bg-slate-800"
+                >
+                  {sub}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {suggestion && (
         <div className="rounded-lg border border-sky-700/60 bg-sky-500/10 p-2.5">

@@ -1,5 +1,6 @@
+import type { DaySchedule } from './schedule'
 import type { Day } from './types'
-import { DIAS } from './types'
+import { todaySlot } from './schedule'
 
 export function todayISO(): string {
   const d = new Date()
@@ -25,10 +26,13 @@ export function addDays(iso: string, days: number): string {
   return d.toISOString().slice(0, 10)
 }
 
-export function todayWeekdayDay(): Day {
+export function todayWeekdayDay(schedule: DaySchedule): Day {
   const weekday = new Date().getDay() // 0=domingo ... 6=sábado
-  const match = DIAS.find((d) => d.weekday === weekday)
-  return match ? match.key : 'segunda'
+  return todaySlot(schedule, weekday)
+}
+
+export function weekdayOfISO(iso: string): number {
+  return new Date(iso + 'T00:00:00').getDay()
 }
 
 export interface CicloOndulatorio {

@@ -1,14 +1,14 @@
 import { useMemo, useState } from 'react'
 import type { JJSession, Workout } from '../lib/types'
 import { workoutVolume } from '../lib/calculations'
-import { formatDateBR } from '../lib/dates'
+import { formatDateBR, weekdayOfISO } from '../lib/dates'
+import { weekdayLabel } from '../lib/schedule'
 import { Card } from './ui'
 
 type HistoryEvent =
   | { kind: 'treino'; date: string; workout: Workout }
   | { kind: 'jiujitsu'; date: string; session: JJSession }
 
-const DIA_LABEL: Record<Workout['day'], string> = { segunda: 'Segunda', quarta: 'Quarta', sexta: 'Sexta' }
 const JJ_TYPE_LABEL: Record<JJSession['type'], string> = { sessao1: 'Sessão 1', sessao2: 'Sessão 2', drill: 'Drill de velocidade' }
 
 function monthLabel(dateISO: string): string {
@@ -70,7 +70,7 @@ export function HistoryList({ workouts, jjSessions }: { workouts: Workout[]; jjS
                     {ev.kind === 'treino' ? (
                       <>
                         <p className="font-medium text-slate-200">
-                          {formatDateBR(ev.date)} · Musculação · {DIA_LABEL[ev.workout.day]}
+                          {formatDateBR(ev.date)} · Musculação · {weekdayLabel(weekdayOfISO(ev.date))}
                         </p>
                         <p className="text-xs text-slate-400">
                           {ev.workout.summary?.totalSets ?? ev.workout.exercises.reduce((s, e) => s + e.sets.length, 0)} séries ·{' '}

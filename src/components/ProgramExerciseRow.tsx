@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { LiftCategory, ProgramExercise } from '../lib/types'
 import { youtubeSearchUrl } from '../lib/youtube'
+import { getBuiltInSubstitutes } from '../lib/substitutes'
 import { Card } from './ui'
 
 const LIFT_OPTIONS: { key: LiftCategory; label: string }[] = [
@@ -20,6 +21,23 @@ export function ProgramExerciseRow({
 }) {
   const [name, setName] = useState(exercise.name)
   const [detail, setDetail] = useState(exercise.detail)
+  const [substitutesDraft, setSubstitutesDraft] = useState((exercise.substitutes ?? []).join(', '))
+
+  const suggestions = getBuiltInSubstitutes(exercise).filter((s) => !(exercise.substitutes ?? []).includes(s))
+
+  function commitSubstitutes(value: string) {
+    const list = value
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean)
+    onCommit({ substitutes: list })
+  }
+
+  function addSuggestion(sug: string) {
+    const next = [...(exercise.substitutes ?? []), sug]
+    setSubstitutesDraft(next.join(', '))
+    onCommit({ substitutes: next })
+  }
 
   return (
     <Card className="space-y-2.5">
@@ -82,6 +100,33 @@ export function ProgramExerciseRow({
           ))}
         </div>
       )}
+      <div>
+        <label className="mb-1 block text-xs text-slate-400" htmlFor={`subs-${exercise.id}`}>
+          Substitutos (opcional, separados por vírgula)
+        </label>
+        <input
+          id={`subs-${exercise.id}`}
+          value={substitutesDraft}
+          onChange={(e) => setSubstitutesDraft(e.target.value)}
+          onBlur={() => commitSubstitutes(substitutesDraft)}
+          className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-300 focus:border-emerald-500 focus:outline-none"
+          placeholder="ex: Leg press, Agachamento no smith"
+        />
+        {suggestions.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {suggestions.map((sug) => (
+              <button
+                key={sug}
+                type="button"
+                onClick={() => addSuggestion(sug)}
+                className="rounded-full border border-slate-700 bg-slate-900 px-2.5 py-1 text-xs text-slate-400 active:bg-slate-800"
+              >
+                + {sug}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
     </Card>
   )
 }

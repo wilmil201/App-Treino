@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
 import { useData } from '../context/DataContext'
 import { useToast } from '../context/ToastContext'
-import { DIAS, type Day, type ExerciseLog, type SetLog, type Workout } from '../lib/types'
+import type { Day, ExerciseLog, SetLog, Workout } from '../lib/types'
+import { DAY_SLOTS, slotLabel } from '../lib/schedule'
 import { generateId } from '../lib/id'
 import { todayISO, todayWeekdayDay, getCicloOndulatorio, formatDateBR } from '../lib/dates'
 import { workoutVolume, epley1RM, getMaxE1RM } from '../lib/calculations'
@@ -16,13 +17,13 @@ function formatVolume(v: number): string {
 }
 
 export function RegistrarPage() {
-  const { program, workouts, upsertWorkout } = useData()
+  const { program, workouts, schedule, upsertWorkout } = useData()
   const { showToast } = useToast()
 
   const today = todayISO()
   const existing = workouts.find((w) => w.date === today)
 
-  const [selectedDay, setSelectedDay] = useState<Day>(existing?.day ?? todayWeekdayDay())
+  const [selectedDay, setSelectedDay] = useState<Day>(existing?.day ?? todayWeekdayDay(schedule))
   const [weightExpanded, setWeightExpanded] = useState(true)
   const [weightDraft, setWeightDraft] = useState(existing?.bodyWeight ? String(existing.bodyWeight) : '')
   const [notesDraft, setNotesDraft] = useState(existing?.notes ?? '')
@@ -95,6 +96,11 @@ export function RegistrarPage() {
     updateExerciseSets(exerciseId, (sets) => sets.filter((s) => s.id !== setId), 'Série removida')
   }
 
+  function handleSwapExercise(exerciseId: string, newName: string) {
+    const exercises = workout.exercises.map((ex) => (ex.exerciseId === exerciseId ? { ...ex, name: newName } : ex))
+    commit({ ...workout, day, exercises }, `Exercício trocado para: ${newName}`)
+  }
+
   function handleSaveDayInfo() {
     const parsedWeight = weightDraft === '' ? undefined : Number(weightDraft)
     commit({ ...workout, day, bodyWeight: parsedWeight, notes: notesDraft || undefined }, 'Peso corporal e observações salvos')
@@ -115,20 +121,20 @@ export function RegistrarPage() {
       <CycleBanner ciclo={ciclo} />
 
       <div className="mb-4 grid grid-cols-3 gap-2">
-        {DIAS.map((d) => (
+        {DAY_SLOTS.map((d) => (
           <button
-            key={d.key}
+            key={d}
             type="button"
             disabled={!!existing}
-            onClick={() => setSelectedDay(d.key)}
-            aria-pressed={day === d.key}
+            onClick={() => setSelectedDay(d)}
+            aria-pressed={day === d}
             className={`rounded-xl border px-2 py-2.5 text-sm font-semibold transition ${
-              day === d.key
+              day === d
                 ? 'border-emerald-500 bg-emerald-500/15 text-emerald-300'
                 : 'border-slate-700 bg-slate-900 text-slate-300'
             } ${existing ? 'opacity-60' : 'active:bg-slate-800'}`}
           >
-            {d.label}
+            {slotLabel(schedule, d)}
           </button>
         ))}
       </div>
@@ -190,7 +196,8 @@ export function RegistrarPage() {
 
       <div className="space-y-4">
         {workout.exercises.map((ex) => {
-          const detail = program[day].find((p) => p.id === ex.exerciseId)?.detail
+          const programExercise = program[day].find((p) => p.id === ex.exerciseId)
+          const detail = programExercise?.detail
           let suggestion: ExerciseSuggestionView | null = null
           if (ex.liftCategory) {
             const s = suggestMainLift(ex.liftCategory, workouts, program, ciclo)
@@ -209,9 +216,11 @@ export function RegistrarPage() {
               exercise={ex}
               detail={detail}
               suggestion={suggestion}
+              customSubstitutes={programExercise?.substitutes ?? []}
               onAddSet={(set) => handleAddSet(ex.exerciseId, set)}
               onUpdateSet={(setId, patch) => handleUpdateSet(ex.exerciseId, setId, patch)}
               onDeleteSet={(setId) => handleDeleteSet(ex.exerciseId, setId)}
+              onSwapExercise={(newName) => handleSwapExercise(ex.exerciseId, newName)}
             />
           )
         })}

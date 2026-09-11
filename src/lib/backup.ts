@@ -1,6 +1,7 @@
 import type { JJSession, Program, Workout } from './types'
 import { storage } from './storage'
-import { todayISO } from './dates'
+import { todayISO, weekdayOfISO } from './dates'
+import { weekdayLabel } from './schedule'
 
 function downloadBlob(filename: string, content: string, mime: string) {
   const blob = new Blob([content], { type: mime })
@@ -23,6 +24,7 @@ export interface ImportedBackup {
   program?: Program
   workouts?: Workout[]
   jjSessions?: JJSession[]
+  schedule?: import('./schedule').DaySchedule
 }
 
 /** Valida minimamente o formato de um backup antes de sobrescrever os dados locais. */
@@ -79,7 +81,7 @@ export function buildWorkoutsCsv(workouts: Workout[]): string {
       ex.sets.forEach((s, idx) => {
         rows.push([
           w.date,
-          w.day,
+          weekdayLabel(weekdayOfISO(w.date)),
           ex.name,
           ex.isMain ? 'sim' : 'não',
           ex.liftCategory ?? '',

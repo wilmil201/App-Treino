@@ -1,10 +1,6 @@
-export type Day = 'segunda' | 'quarta' | 'sexta'
-
-export const DIAS: { key: Day; label: string; weekday: number }[] = [
-  { key: 'segunda', label: 'Segunda', weekday: 1 },
-  { key: 'quarta', label: 'Quarta', weekday: 3 },
-  { key: 'sexta', label: 'Sexta', weekday: 5 },
-]
+/** Identificadores abstratos dos 3 treinos semanais — a que dia real da semana cada um
+ * corresponde é definido pelo atleta (ver DaySchedule em lib/schedule.ts), não é fixo. */
+export type Day = 'dia1' | 'dia2' | 'dia3'
 
 export type LiftCategory = 'agachamento' | 'supino' | 'terra'
 
@@ -14,6 +10,8 @@ export interface ProgramExercise {
   detail: string
   isMain: boolean
   liftCategory?: LiftCategory
+  /** Exercícios alternativos definidos pelo atleta, caso não possa/saiba fazer este. */
+  substitutes?: string[]
 }
 
 export type Program = Record<Day, ProgramExercise[]>
