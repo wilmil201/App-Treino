@@ -35,7 +35,7 @@ const ACWR_ZONE: Record<string, { label: string; color: string }> = {
 }
 
 export function PainelPage() {
-  const { workouts, jjSessions, program } = useData()
+  const { workouts, jjSessions } = useData()
 
   const alerts = buildRegulationAlerts(workouts)
   const acwr = computeACWR(workouts)
@@ -45,7 +45,7 @@ export function PainelPage() {
   const today = todayISO()
   const cicloStart = workouts.length > 0 ? [...workouts].map((w) => w.date).sort()[0] : null
   const ciclo = getCicloOndulatorio(cicloStart, today)
-  const liftSuggestions = (['agachamento', 'supino', 'terra'] as LiftCategory[]).map((cat) => suggestMainLift(cat, workouts, program, ciclo))
+  const liftSuggestions = (['agachamento', 'supino', 'terra'] as LiftCategory[]).map((cat) => suggestMainLift(cat, workouts, ciclo))
 
   const exerciseNames = listLoggedExerciseNames(workouts)
 
@@ -82,9 +82,7 @@ export function PainelPage() {
                 {LIFT_LABEL[s.category]}
               </p>
               <p className="text-lg font-bold text-slate-100">
-                {s.suggestedLoad !== null
-                  ? `${s.suggestedLoad}kg${!s.isDeload ? ` x${s.targetReps} @ RPE ${s.targetRpe}` : ''}`
-                  : '—'}
+                {s.suggestedLoad !== null ? `${s.suggestedLoad}kg${s.reps ? ` x${s.reps}` : ''}` : '—'}
               </p>
             </div>
             <p className="mt-1 text-xs text-slate-400">{s.note}</p>

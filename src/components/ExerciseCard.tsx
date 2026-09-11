@@ -7,8 +7,7 @@ import { Badge, Card } from './ui'
 
 export interface ExerciseSuggestionView {
   suggestedLoad: number | null
-  targetReps?: number
-  targetRpe?: number
+  reps?: number
   note: string
 }
 
@@ -152,9 +151,7 @@ export function ExerciseCard({
           <p className="text-sm font-semibold text-sky-300">
             💡 Sugestão:{' '}
             {suggestion.suggestedLoad !== null
-              ? `${suggestion.suggestedLoad}kg${suggestion.targetReps ? ` x${suggestion.targetReps}` : ''}${
-                  suggestion.targetRpe ? ` @ RPE ${suggestion.targetRpe}` : ''
-                }`
+              ? `${suggestion.suggestedLoad}kg${suggestion.reps ? ` x${suggestion.reps}` : ''}`
               : 'sem sugestão ainda'}
           </p>
           <p className="text-xs text-sky-200/80">{suggestion.note}</p>

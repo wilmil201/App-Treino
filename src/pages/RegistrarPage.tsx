@@ -200,14 +200,14 @@ export function RegistrarPage() {
           const detail = programExercise?.detail
           let suggestion: ExerciseSuggestionView | null = null
           if (ex.liftCategory) {
-            const s = suggestMainLift(ex.liftCategory, workouts, program, ciclo)
+            const s = suggestMainLift(ex.liftCategory, workouts, ciclo)
             if (s.hasHistory) {
-              suggestion = { suggestedLoad: s.suggestedLoad, targetReps: s.targetReps, targetRpe: s.isDeload ? undefined : s.targetRpe, note: s.note }
+              suggestion = { suggestedLoad: s.suggestedLoad, reps: s.reps, note: s.note }
             }
           } else {
             const s = suggestAccessory(ex.name, workouts)
             if (s.hasHistory) {
-              suggestion = { suggestedLoad: s.suggestedLoad, note: s.note }
+              suggestion = { suggestedLoad: s.suggestedLoad, reps: s.reps, note: s.note }
             }
           }
           return (
