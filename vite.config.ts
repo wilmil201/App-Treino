@@ -14,6 +14,11 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
+      // Registramos o service worker manualmente em main.tsx com updateViaCache:'none',
+      // porque o script injetado automaticamente não força o navegador a ignorar o
+      // cache do sw.js — e hosts como GitHub Pages cacheiam esse arquivo por vários
+      // minutos, fazendo o app parecer "travado" numa versão antiga.
+      injectRegister: false,
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
         id: base,
