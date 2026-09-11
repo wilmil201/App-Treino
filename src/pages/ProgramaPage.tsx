@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { useData } from '../context/DataContext'
 import { useToast } from '../context/ToastContext'
-import type { Day, ProgramExercise } from '../lib/types'
+import type { Day, Program, ProgramExercise } from '../lib/types'
 import { DAY_SLOTS, WEEKDAY_NAMES, slotLabel, type DaySchedule } from '../lib/schedule'
 import { generateId } from '../lib/id'
 import { Card, PrimaryButton, SecondaryButton, SectionTitle } from '../components/ui'
 import { ProgramExerciseRow } from '../components/ProgramExerciseRow'
 import { BackupSection } from '../components/BackupSection'
+import { WorkoutGeneratorWizard } from '../components/WorkoutGeneratorWizard'
 
 const SLOT_TITLE: Record<Day, string> = { dia1: 'Treino 1', dia2: 'Treino 2', dia3: 'Treino 3' }
 
@@ -15,6 +16,7 @@ export function ProgramaPage() {
   const { showToast } = useToast()
   const [day, setDay] = useState<Day>('dia1')
   const [confirmReset, setConfirmReset] = useState(false)
+  const [showWizard, setShowWizard] = useState(false)
 
   const exercises = program[day]
 
@@ -47,9 +49,27 @@ export function ProgramaPage() {
     showToast('Dias de treino atualizados')
   }
 
+  function handleApplyGenerated(generated: Program) {
+    saveProgram(generated)
+    setShowWizard(false)
+    showToast('Treino gerado aplicado com sucesso')
+  }
+
   return (
     <div className="pb-4">
       <h1 className="mb-4 text-xl font-bold">Programa</h1>
+
+      <Card className="mb-6 border-emerald-700/60 bg-emerald-500/5">
+        <p className="mb-1 font-semibold text-emerald-300">Não tem um treino pronto?</p>
+        <p className="mb-3 text-xs text-slate-400">
+          Responda um questionário rápido e o app monta um programa de 3 dias sob medida para você.
+        </p>
+        <PrimaryButton onClick={() => setShowWizard(true)}>🧭 Gerar treino automaticamente</PrimaryButton>
+      </Card>
+
+      {showWizard && (
+        <WorkoutGeneratorWizard schedule={schedule} onApply={handleApplyGenerated} onClose={() => setShowWizard(false)} />
+      )}
 
       <SectionTitle>Dias de treino</SectionTitle>
       <Card className="mb-6 space-y-3">
