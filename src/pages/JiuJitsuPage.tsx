@@ -31,12 +31,13 @@ const INTENSITY_LABEL: Record<string, string> = {
 }
 
 export function JiuJitsuPage() {
-  const { jjSessions, workouts, upsertJJSession, deleteJJSession } = useData()
+  const { jjSessions, workouts, upsertJJSession, deleteJJSession, cycleStartJiuJitsu, saveCycleStartJiuJitsu } = useData()
   const { showToast } = useToast()
   const [showLibrary, setShowLibrary] = useState(false)
 
   const today = todayISO()
-  const macrocicloStart = jjSessions.length > 0 ? [...jjSessions].map((s) => s.date).sort()[0] : null
+  const autoMacrocicloStart = jjSessions.length > 0 ? [...jjSessions].map((s) => s.date).sort()[0] : null
+  const macrocicloStart = cycleStartJiuJitsu ?? autoMacrocicloStart
   const mesociclo = getMesociclo(macrocicloStart, today)
 
   const progression = checkProgressionReadiness(workouts, jjSessions, today)
@@ -47,7 +48,12 @@ export function JiuJitsuPage() {
     <div className="pb-4">
       <h1 className="mb-4 text-xl font-bold">Jiu-Jitsu</h1>
 
-      <MesocicloBanner mesociclo={mesociclo} />
+      <MesocicloBanner
+        mesociclo={mesociclo}
+        cycleStart={cycleStartJiuJitsu}
+        autoCycleStart={autoMacrocicloStart}
+        onChangeCycleStart={saveCycleStartJiuJitsu}
+      />
 
       <div className="mb-6">
         <JJSessionForm

@@ -26,6 +26,8 @@ export interface ImportedBackup {
   jjSessions?: JJSession[]
   schedule?: import('./schedule').DaySchedule
   anamnese?: Anamnese
+  cycleStartForca?: string | null
+  cycleStartJiuJitsu?: string | null
 }
 
 /** Valida minimamente o formato de um backup antes de sobrescrever os dados locais. */

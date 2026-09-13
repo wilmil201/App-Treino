@@ -67,7 +67,11 @@ export function MobilityRoutineSession() {
                       rel="noopener noreferrer"
                       className="mt-1 inline-block text-xs font-medium text-emerald-400"
                     >
-                      {item.videoUrl ? '▶ ver vídeo' : '▶ ver referência (busca)'}
+                      {item.videoUrl
+                        ? item.videoIsCompilation
+                          ? '▶ ver compilação (cobre vários drills)'
+                          : '▶ ver vídeo'
+                        : '▶ ver referência (busca)'}
                     </a>
                   </div>
                 </li>

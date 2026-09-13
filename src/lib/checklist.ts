@@ -7,6 +7,8 @@ export interface ChecklistItem {
   videoUrl?: string
   /** Fallback: usado só quando não há videoUrl, abre uma busca no YouTube. */
   videoQuery: string
+  /** true = videoUrl é uma compilação com vários drills, não um clipe exclusivo deste item. */
+  videoIsCompilation?: boolean
 }
 
 export interface ChecklistGroup {

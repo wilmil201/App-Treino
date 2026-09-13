@@ -11,6 +11,8 @@ export interface RoutineItem {
   aplicacao: string
   videoQuery: string
   videoUrl?: string
+  /** true = videoUrl é uma compilação com vários drills, não um clipe exclusivo deste item. */
+  videoIsCompilation?: boolean
 }
 
 export interface RoutineBlock {
@@ -174,6 +176,7 @@ export const HOME_MOBILITY_ROUTINE: RoutineBlock[] = [
         aplicacao: 'Treina o footwork de passagem de guarda em pé, sozinho.',
         videoQuery: 'guard passing drill heavy bag jiu-jitsu',
         videoUrl: SACO_BATER_REFERENCE_VIDEO.url,
+        videoIsCompilation: true,
       },
       {
         id: 'entrada-queda-saco',
@@ -183,6 +186,7 @@ export const HOME_MOBILITY_ROUTINE: RoutineBlock[] = [
         aplicacao: 'Repetição de entrada de queda com alvo fixo — constrói confiança e timing.',
         videoQuery: 'takedown entry heavy bag drill',
         videoUrl: SACO_BATER_REFERENCE_VIDEO.url,
+        videoIsCompilation: true,
       },
     ],
   },

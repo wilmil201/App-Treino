@@ -19,6 +19,7 @@ import type { LiftCategory } from '../lib/types'
 import { formatDateBR, getCicloOndulatorio, todayISO } from '../lib/dates'
 import { bodyWeightTrend, gasTrend, weeklyConsistency } from '../lib/performance'
 import { ROLA_CATEGORIA_LABEL, rolaCategoriaBreakdown } from '../lib/jjPlanning'
+import { CycleStartControl } from '../components/CycleStartControl'
 
 const LEVEL_STYLE: Record<Alert['level'], { border: string; bg: string; text: string; icon: string }> = {
   risco: { border: 'border-red-600', bg: 'bg-red-500/10', text: 'text-red-300', icon: '⚠️' },
@@ -38,7 +39,7 @@ const ACWR_ZONE: Record<string, { label: string; color: string }> = {
 }
 
 export function PainelPage() {
-  const { workouts, jjSessions } = useData()
+  const { workouts, jjSessions, cycleStartForca, saveCycleStartForca } = useData()
 
   const alerts = buildRegulationAlerts(workouts)
   const acwr = computeACWR(workouts)
@@ -46,7 +47,8 @@ export function PainelPage() {
   const weeks = weeklyVolumes(workouts).slice(-8)
 
   const today = todayISO()
-  const cicloStart = workouts.length > 0 ? [...workouts].map((w) => w.date).sort()[0] : null
+  const autoCicloStart = workouts.length > 0 ? [...workouts].map((w) => w.date).sort()[0] : null
+  const cicloStart = cycleStartForca ?? autoCicloStart
   const ciclo = getCicloOndulatorio(cicloStart, today)
   const liftSuggestions = (['agachamento', 'supino', 'terra'] as LiftCategory[]).map((cat) => suggestMainLift(cat, workouts, ciclo))
 
@@ -104,6 +106,7 @@ export function PainelPage() {
           Semana atual do ciclo: {ciclo.semana}/4 · {ciclo.descricao}. Sugestões combinam a periodização ondulatória com os alertas de
           autorregulação acima.
         </p>
+        <CycleStartControl value={cycleStartForca} autoValue={autoCicloStart} onChange={saveCycleStartForca} tone="dark" />
       </div>
 
       <SectionTitle>Carga aguda vs. crônica (ACWR)</SectionTitle>

@@ -9,6 +9,8 @@ const KEYS = {
   onboarded: 'treino:onboarded',
   schedule: 'treino:schedule',
   anamnese: 'treino:anamnese',
+  cycleStartForca: 'treino:cycleStartForca',
+  cycleStartJiuJitsu: 'treino:cycleStartJiuJitsu',
 } as const
 
 const EMPTY_ANAMNESE: Anamnese = { mainLifts: {}, accessories: {} }
@@ -102,6 +104,20 @@ export const storage = {
   setOnboarded() {
     write(KEYS.onboarded, true)
   },
+  /** Data (ISO) de início do ciclo ondulatório de força — null = calcular automaticamente a partir do 1º treino. */
+  getCycleStartForca(): string | null {
+    return read<string | null>(KEYS.cycleStartForca, null)
+  },
+  setCycleStartForca(iso: string | null) {
+    write(KEYS.cycleStartForca, iso)
+  },
+  /** Data (ISO) de início do macrociclo de jiu-jitsu — null = calcular automaticamente a partir da 1ª sessão. */
+  getCycleStartJiuJitsu(): string | null {
+    return read<string | null>(KEYS.cycleStartJiuJitsu, null)
+  },
+  setCycleStartJiuJitsu(iso: string | null) {
+    write(KEYS.cycleStartJiuJitsu, iso)
+  },
   exportAll(): {
     version: 1
     exportedAt: string
@@ -110,6 +126,8 @@ export const storage = {
     jjSessions: JJSession[]
     schedule: DaySchedule
     anamnese: Anamnese
+    cycleStartForca: string | null
+    cycleStartJiuJitsu: string | null
   } {
     return {
       version: 1,
@@ -119,6 +137,8 @@ export const storage = {
       jjSessions: this.getJJSessions(),
       schedule: this.getSchedule(),
       anamnese: this.getAnamnese(),
+      cycleStartForca: this.getCycleStartForca(),
+      cycleStartJiuJitsu: this.getCycleStartJiuJitsu(),
     }
   },
   importAll(data: {
@@ -127,11 +147,15 @@ export const storage = {
     jjSessions?: JJSession[]
     schedule?: DaySchedule
     anamnese?: Anamnese
+    cycleStartForca?: string | null
+    cycleStartJiuJitsu?: string | null
   }) {
     if (data.program) write(KEYS.program, migrateProgram(data.program as unknown as Record<string, unknown>))
     if (data.workouts) write(KEYS.workouts, migrateWorkouts(data.workouts))
     if (data.jjSessions) write(KEYS.jjSessions, data.jjSessions)
     if (data.schedule) write(KEYS.schedule, data.schedule)
     if (data.anamnese) write(KEYS.anamnese, data.anamnese)
+    if (data.cycleStartForca !== undefined) write(KEYS.cycleStartForca, data.cycleStartForca)
+    if (data.cycleStartJiuJitsu !== undefined) write(KEYS.cycleStartJiuJitsu, data.cycleStartJiuJitsu)
   },
 }

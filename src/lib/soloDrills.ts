@@ -74,6 +74,7 @@ export const SOLO_DRILL_GROUPS: ChecklistGroup[] = [
         aplicacao: 'Treina o footwork de passagem de guarda em pé, sozinho.',
         videoQuery: 'guard passing drill heavy bag jiu-jitsu',
         videoUrl: SACO_BATER_REFERENCE_VIDEO.url,
+        videoIsCompilation: true,
       },
       {
         id: 'entrada-queda-saco',
@@ -81,6 +82,7 @@ export const SOLO_DRILL_GROUPS: ChecklistGroup[] = [
         aplicacao: 'Repetição de entrada de queda com alvo fixo — constrói confiança e timing.',
         videoQuery: 'takedown entry heavy bag drill',
         videoUrl: SACO_BATER_REFERENCE_VIDEO.url,
+        videoIsCompilation: true,
       },
       {
         id: 'finalizacao-saco',
@@ -88,6 +90,7 @@ export const SOLO_DRILL_GROUPS: ChecklistGroup[] = [
         aplicacao: 'Repetição da mecânica de finalização sem depender de parceiro.',
         videoQuery: 'submission drill heavy bag armbar mechanics',
         videoUrl: SACO_BATER_REFERENCE_VIDEO.url,
+        videoIsCompilation: true,
       },
       {
         id: 'troca-posicao-saco',
@@ -95,6 +98,7 @@ export const SOLO_DRILL_GROUPS: ChecklistGroup[] = [
         aplicacao: 'Simula transições de montada/100kg mantendo pressão no saco.',
         videoQuery: 'top pressure position change heavy bag drill',
         videoUrl: SACO_BATER_REFERENCE_VIDEO.url,
+        videoIsCompilation: true,
       },
     ],
   },
