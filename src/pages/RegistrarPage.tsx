@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useData } from '../context/DataContext'
 import { useToast } from '../context/ToastContext'
-import type { Day, ExerciseFeedback, ExerciseLog, SetLog, Workout } from '../lib/types'
+import type { CardioSetLog, Day, ExerciseFeedback, ExerciseLog, SetLog, Workout } from '../lib/types'
 import { DAY_SLOTS, slotLabel } from '../lib/schedule'
 import { generateId } from '../lib/id'
 import { todayISO, todayWeekdayDay, getCicloOndulatorio, formatDateBR } from '../lib/dates'
@@ -38,7 +38,9 @@ export function RegistrarPage() {
       name: ex.name,
       isMain: ex.isMain,
       liftCategory: ex.liftCategory,
+      kind: ex.kind,
       sets: [],
+      cardioSets: [],
     }))
     return {
       id: generateId('workout'),
@@ -52,7 +54,7 @@ export function RegistrarPage() {
   const cicloStart = workouts.length > 0 ? [...workouts].map((w) => w.date).sort()[0] : null
   const ciclo = getCicloOndulatorio(cicloStart, today)
 
-  const totalSets = workout.exercises.reduce((sum, ex) => sum + ex.sets.length, 0)
+  const totalSets = workout.exercises.reduce((sum, ex) => sum + ex.sets.length + (ex.cardioSets?.length ?? 0), 0)
   const totalVolume = workoutVolume(workout)
 
   function commit(updated: Workout, toastMessage?: string) {
@@ -95,6 +97,29 @@ export function RegistrarPage() {
 
   function handleDeleteSet(exerciseId: string, setId: string) {
     updateExerciseSets(exerciseId, (sets) => sets.filter((s) => s.id !== setId), 'Série removida')
+  }
+
+  function updateExerciseCardioSets(exerciseId: string, updater: (sets: CardioSetLog[]) => CardioSetLog[], toastMessage?: string) {
+    const exercises = workout.exercises.map((ex) =>
+      ex.exerciseId === exerciseId ? { ...ex, cardioSets: updater(ex.cardioSets ?? []) } : ex,
+    )
+    commit({ ...workout, day, exercises }, toastMessage)
+  }
+
+  function handleAddCardioSet(exerciseId: string, set: CardioSetLog) {
+    updateExerciseCardioSets(exerciseId, (sets) => [...sets, set], 'Registro salvo')
+  }
+
+  function handleUpdateCardioSet(exerciseId: string, setId: string, patch: Partial<CardioSetLog>) {
+    updateExerciseCardioSets(
+      exerciseId,
+      (sets) => sets.map((s) => (s.id === setId ? { ...s, ...patch } : s)),
+      'Registro atualizado',
+    )
+  }
+
+  function handleDeleteCardioSet(exerciseId: string, setId: string) {
+    updateExerciseCardioSets(exerciseId, (sets) => sets.filter((s) => s.id !== setId), 'Registro removido')
   }
 
   function handleSwapExercise(exerciseId: string, newName: string) {
@@ -215,7 +240,9 @@ export function RegistrarPage() {
           const programExercise = program[day].find((p) => p.id === ex.exerciseId)
           const detail = programExercise?.detail
           let suggestion: ExerciseSuggestionView | null = null
-          if (ex.liftCategory) {
+          if (ex.kind === 'aerobico') {
+            // exercícios aeróbicos usam duração/esforço, não carga — sem sugestão de carga aqui.
+          } else if (ex.liftCategory) {
             const s = suggestMainLift(ex.liftCategory, workouts, ciclo, anamnese)
             if (s.hasHistory) {
               suggestion = { suggestedLoad: s.suggestedLoad, reps: s.reps, note: s.note }
@@ -236,6 +263,9 @@ export function RegistrarPage() {
               onAddSet={(set) => handleAddSet(ex.exerciseId, set)}
               onUpdateSet={(setId, patch) => handleUpdateSet(ex.exerciseId, setId, patch)}
               onDeleteSet={(setId) => handleDeleteSet(ex.exerciseId, setId)}
+              onAddCardioSet={(set) => handleAddCardioSet(ex.exerciseId, set)}
+              onUpdateCardioSet={(setId, patch) => handleUpdateCardioSet(ex.exerciseId, setId, patch)}
+              onDeleteCardioSet={(setId) => handleDeleteCardioSet(ex.exerciseId, setId)}
               onSwapExercise={(newName) => handleSwapExercise(ex.exerciseId, newName)}
               onSaveFeedback={(feedback) => handleSaveFeedback(ex.exerciseId, feedback)}
             />

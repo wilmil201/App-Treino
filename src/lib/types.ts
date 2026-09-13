@@ -4,12 +4,17 @@ export type Day = 'dia1' | 'dia2' | 'dia3'
 
 export type LiftCategory = 'agachamento' | 'supino' | 'terra'
 
+/** 'forca' (padrão) é logado por carga/reps/RPE; 'aerobico' é logado por duração/esforço —
+ * não faz sentido pedir carga e reps de uma esteira ou bike. */
+export type ExerciseKind = 'forca' | 'aerobico'
+
 export interface ProgramExercise {
   id: string
   name: string
   detail: string
   isMain: boolean
   liftCategory?: LiftCategory
+  kind?: ExerciseKind
   /** Exercícios alternativos definidos pelo atleta, caso não possa/saiba fazer este. */
   substitutes?: string[]
 }
@@ -20,6 +25,13 @@ export interface SetLog {
   id: string
   load: number
   reps: number
+  rpe: number
+}
+
+/** Entrada de série aeróbica: duração em minutos + esforço percebido (mesma escala de RPE 1-10). */
+export interface CardioSetLog {
+  id: string
+  durationMin: number
   rpe: number
 }
 
@@ -38,7 +50,9 @@ export interface ExerciseLog {
   name: string
   isMain: boolean
   liftCategory?: LiftCategory
+  kind?: ExerciseKind
   sets: SetLog[]
+  cardioSets?: CardioSetLog[]
   feedback?: ExerciseFeedback
 }
 

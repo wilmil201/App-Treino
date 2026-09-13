@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { LiftCategory, ProgramExercise } from '../lib/types'
+import type { ExerciseKind, LiftCategory, ProgramExercise } from '../lib/types'
 import { youtubeSearchUrl } from '../lib/youtube'
 import { getBuiltInSubstitutes } from '../lib/substitutes'
 import { Card } from './ui'
@@ -8,6 +8,11 @@ const LIFT_OPTIONS: { key: LiftCategory; label: string }[] = [
   { key: 'agachamento', label: 'Agachamento' },
   { key: 'supino', label: 'Supino' },
   { key: 'terra', label: 'Terra' },
+]
+
+const KIND_OPTIONS: { key: ExerciseKind; label: string }[] = [
+  { key: 'forca', label: 'Força (carga/reps)' },
+  { key: 'aerobico', label: 'Aeróbico (duração/esforço)' },
 ]
 
 export function ProgramExerciseRow({
@@ -72,15 +77,38 @@ export function ProgramExerciseRow({
         className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-300 focus:border-emerald-500 focus:outline-none"
         placeholder="ex: 4x6 @ RPE 8"
       />
-      <label className="flex items-center gap-2 text-sm text-slate-300">
-        <input
-          type="checkbox"
-          className="h-4 w-4 accent-emerald-500"
-          checked={exercise.isMain}
-          onChange={(e) => onCommit({ isMain: e.target.checked, liftCategory: e.target.checked ? exercise.liftCategory ?? 'agachamento' : undefined })}
-        />
-        Levantamento principal
-      </label>
+      <div className="grid grid-cols-2 gap-2">
+        {KIND_OPTIONS.map((opt) => (
+          <button
+            key={opt.key}
+            type="button"
+            onClick={() =>
+              onCommit(
+                opt.key === 'aerobico' ? { kind: 'aerobico', isMain: false, liftCategory: undefined } : { kind: 'forca' },
+              )
+            }
+            aria-pressed={(exercise.kind ?? 'forca') === opt.key}
+            className={`rounded-lg border px-2 py-1.5 text-xs font-semibold ${
+              (exercise.kind ?? 'forca') === opt.key
+                ? 'border-sky-500 bg-sky-500/15 text-sky-300'
+                : 'border-slate-700 bg-slate-900 text-slate-300'
+            }`}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+      {exercise.kind !== 'aerobico' && (
+        <label className="flex items-center gap-2 text-sm text-slate-300">
+          <input
+            type="checkbox"
+            className="h-4 w-4 accent-emerald-500"
+            checked={exercise.isMain}
+            onChange={(e) => onCommit({ isMain: e.target.checked, liftCategory: e.target.checked ? exercise.liftCategory ?? 'agachamento' : undefined })}
+          />
+          Levantamento principal
+        </label>
+      )}
       {exercise.isMain && (
         <div className="grid grid-cols-3 gap-2">
           {LIFT_OPTIONS.map((opt) => (

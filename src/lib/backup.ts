@@ -74,11 +74,24 @@ function toCsv(rows: (string | number | undefined)[][]): string {
 }
 
 export function buildWorkoutsCsv(workouts: Workout[]): string {
-  const header = ['Data', 'Dia', 'Exercício', 'Principal', 'Levantamento', 'Série', 'Carga (kg)', 'Reps', 'RPE', 'Peso corporal (kg)', 'Observações', 'Treino finalizado']
+  const header = [
+    'Data',
+    'Dia',
+    'Exercício',
+    'Principal',
+    'Levantamento',
+    'Série',
+    'Carga (kg)',
+    'Reps',
+    'Duração (min)',
+    'RPE/Esforço',
+    'Peso corporal (kg)',
+    'Observações',
+    'Treino finalizado',
+  ]
   const rows: (string | number | undefined)[][] = [header]
   for (const w of [...workouts].sort((a, b) => a.date.localeCompare(b.date))) {
     for (const ex of w.exercises) {
-      if (ex.sets.length === 0) continue
       ex.sets.forEach((s, idx) => {
         rows.push([
           w.date,
@@ -89,6 +102,24 @@ export function buildWorkoutsCsv(workouts: Workout[]): string {
           idx + 1,
           s.load,
           s.reps,
+          '',
+          s.rpe,
+          w.bodyWeight ?? '',
+          w.notes ?? '',
+          w.finished ? 'sim' : 'não',
+        ])
+      })
+      ;(ex.cardioSets ?? []).forEach((s, idx) => {
+        rows.push([
+          w.date,
+          weekdayLabel(weekdayOfISO(w.date)),
+          ex.name,
+          ex.isMain ? 'sim' : 'não',
+          '',
+          idx + 1,
+          '',
+          '',
+          s.durationMin,
           s.rpe,
           w.bodyWeight ?? '',
           w.notes ?? '',

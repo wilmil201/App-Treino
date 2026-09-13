@@ -11,7 +11,7 @@ const id = (prefix: string) => `${prefix}-${Date.now().toString(36)}-${counter++
 export function buildDefaultProgram(): Program {
   return {
     dia1: [
-      { id: id('ex'), name: 'Esteira', detail: '10 minutos — aquecimento', isMain: false },
+      { id: id('ex'), name: 'Esteira', detail: '10 minutos — aquecimento', isMain: false, kind: 'aerobico' },
       { id: id('ex'), name: 'Agachamento (rampa)', detail: '30kg x15 / 50kg x12 / 60kg x8', isMain: false },
       {
         id: id('ex'),
@@ -46,7 +46,7 @@ export function buildDefaultProgram(): Program {
       { id: id('ex'), name: 'Tríceps pulley', detail: '3x12', isMain: false },
     ],
     dia3: [
-      { id: id('ex'), name: 'Bike', detail: '10 minutos — aquecimento', isMain: false },
+      { id: id('ex'), name: 'Bike', detail: '10 minutos — aquecimento', isMain: false, kind: 'aerobico' },
       { id: id('ex'), name: 'Terra (rampa)', detail: '50kg x12 / 70kg x8 / 90kg x6 / 110kg x4 / 125kg x2', isMain: false },
       {
         id: id('ex'),

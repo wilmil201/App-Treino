@@ -75,7 +75,7 @@ export function AnamneseForm({
       </p>
 
       {DAY_SLOTS.map((day) => {
-        const exercises = program[day]
+        const exercises = program[day].filter((ex) => ex.kind !== 'aerobico')
         const mainExs = exercises.filter((ex) => ex.isMain)
         const accExs = exercises.filter((ex) => !ex.isMain)
         const isExpanded = expandedDays[day] ?? false
