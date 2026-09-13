@@ -9,6 +9,7 @@ import { ProgramExerciseRow } from '../components/ProgramExerciseRow'
 import { BackupSection } from '../components/BackupSection'
 import { WorkoutGeneratorWizard } from '../components/WorkoutGeneratorWizard'
 import { AnamneseForm } from '../components/AnamneseForm'
+import { UpdateChecker } from '../components/UpdateChecker'
 
 const SLOT_TITLE: Record<Day, string> = { dia1: 'Treino 1', dia2: 'Treino 2', dia3: 'Treino 3' }
 
@@ -182,6 +183,8 @@ export function ProgramaPage() {
           </div>
         </Card>
       )}
+
+      <UpdateChecker />
 
       <BackupSection />
     </div>
