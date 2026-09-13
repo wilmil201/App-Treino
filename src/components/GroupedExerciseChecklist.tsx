@@ -45,12 +45,12 @@ export function GroupedExerciseChecklist({ groups }: { groups: ChecklistGroup[] 
                       <p className="text-sm font-medium text-slate-200">{item.nome}</p>
                       <p className="text-xs text-slate-500">{item.aplicacao}</p>
                       <a
-                        href={youtubeSearchUrl(item.videoQuery)}
+                        href={item.videoUrl ?? youtubeSearchUrl(item.videoQuery)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="mt-1 inline-block text-xs font-medium text-emerald-400"
                       >
-                        ▶ ver referência
+                        {item.videoUrl ? '▶ ver vídeo' : '▶ ver referência (busca)'}
                       </a>
                     </div>
                   </li>

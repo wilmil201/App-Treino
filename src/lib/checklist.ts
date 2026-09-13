@@ -3,6 +3,9 @@ export interface ChecklistItem {
   nome: string
   /** Por que esse exercício/drill importa especificamente para o jiu-jitsu. */
   aplicacao: string
+  /** Link direto de um vídeo específico já conferido — preferível a uma busca genérica. */
+  videoUrl?: string
+  /** Fallback: usado só quando não há videoUrl, abre uma busca no YouTube. */
   videoQuery: string
 }
 
