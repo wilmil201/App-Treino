@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { WARMUP_STEPS } from '../lib/warmup'
+import { WARMUP_SOURCE, WARMUP_STEPS } from '../lib/warmup'
 import { youtubeSearchUrl } from '../lib/youtube'
 import { Card } from './ui'
 
@@ -11,7 +11,7 @@ export function WarmupChecklist() {
   return (
     <Card>
       <div className="mb-3 flex items-center justify-between">
-        <p className="font-semibold">Checklist de aquecimento</p>
+        <p className="font-semibold">Aquecimento RR</p>
         <span className="text-xs text-slate-400">
           {done}/{total}
         </span>
@@ -31,18 +31,37 @@ export function WarmupChecklist() {
                 {step.ordem}. {step.nome}
               </p>
               <p className="text-xs text-slate-500">{step.descricao}</p>
-              <a
-                href={youtubeSearchUrl(step.videoQuery)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-1 inline-block text-xs font-medium text-emerald-400"
-              >
-                ▶ ver referência
-              </a>
+              {step.itens && step.itens.length > 0 ? (
+                <ul className="mt-1.5 space-y-1">
+                  {step.itens.map((item) => (
+                    <li key={item.nome} className="flex flex-wrap items-baseline gap-x-1.5 text-xs">
+                      <a
+                        href={item.videoUrl ?? youtubeSearchUrl(item.nome)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-medium text-emerald-400 underline decoration-dotted"
+                      >
+                        ▶ {item.nome}
+                      </a>
+                      <span className="text-slate-500">— {item.dosagem}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <a
+                  href={youtubeSearchUrl(step.videoQuery)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-1 inline-block text-xs font-medium text-emerald-400"
+                >
+                  ▶ ver referência
+                </a>
+              )}
             </div>
           </li>
         ))}
       </ul>
+      <p className="mt-3 text-[11px] text-slate-500">{WARMUP_SOURCE}</p>
     </Card>
   )
 }

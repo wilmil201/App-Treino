@@ -7,6 +7,7 @@ import { Card, SectionTitle, SecondaryButton, Badge } from '../components/ui'
 import { MesocicloBanner } from '../components/MesocicloBanner'
 import { JJSessionForm } from '../components/JJSessionForm'
 import { WarmupChecklist } from '../components/WarmupChecklist'
+import { CoachTipsCard } from '../components/CoachTipsCard'
 import { MobilityRoutineSession } from '../components/MobilityRoutineSession'
 import { GroupedExerciseChecklist } from '../components/GroupedExerciseChecklist'
 import { ReferenceVideoList } from '../components/ReferenceVideoList'
@@ -84,6 +85,10 @@ export function JiuJitsuPage() {
         <SectionTitle>Aquecimento</SectionTitle>
         <p className="-mt-2 mb-3 text-xs text-slate-500">Antes de treinar jiu-jitsu, sempre.</p>
         <WarmupChecklist />
+      </div>
+
+      <div className="mb-6">
+        <CoachTipsCard />
       </div>
 
       <div className="mb-6">

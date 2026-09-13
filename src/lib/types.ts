@@ -116,12 +116,19 @@ export interface JJSession {
   drillReps?: number
 }
 
+export interface WarmupSubItem {
+  nome: string
+  dosagem: string
+  videoUrl?: string
+}
+
 export interface WarmupStep {
   id: string
   ordem: number
   nome: string
   descricao: string
   videoQuery: string
+  itens?: WarmupSubItem[]
 }
 
 export interface AppState {
