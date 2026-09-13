@@ -10,6 +10,8 @@ import { BackupSection } from '../components/BackupSection'
 import { WorkoutGeneratorWizard } from '../components/WorkoutGeneratorWizard'
 import { AnamneseForm } from '../components/AnamneseForm'
 import { UpdateChecker } from '../components/UpdateChecker'
+import { GroupedExerciseChecklist } from '../components/GroupedExerciseChecklist'
+import { GENERAL_MOBILITY_GROUPS, GENERAL_MOBILITY_SOURCE } from '../lib/generalMobility'
 
 const SLOT_TITLE: Record<Day, string> = { dia1: 'Treino 1', dia2: 'Treino 2', dia3: 'Treino 3' }
 
@@ -20,6 +22,7 @@ export function ProgramaPage() {
   const [confirmReset, setConfirmReset] = useState(false)
   const [showWizard, setShowWizard] = useState(false)
   const [showAnamnese, setShowAnamnese] = useState(false)
+  const [showGeneralMobility, setShowGeneralMobility] = useState(false)
 
   const exercises = program[day]
 
@@ -103,6 +106,23 @@ export function ProgramaPage() {
           </div>
         </div>
       )}
+
+      <Card className="mb-6 border-violet-700/60 bg-violet-500/5">
+        <p className="mb-1 font-semibold text-violet-300">Mobilidade geral (treino de força)</p>
+        <p className="mb-3 text-xs text-slate-400">
+          Mobilidade e estabilidade de tornozelo, joelho, quadril, lombar/core, torácico, ombro e punho — voltado para
+          agachamento, terra, supino e desenvolvimento. Não é o conteúdo de jiu-jitsu, que fica na própria aba.
+        </p>
+        <SecondaryButton onClick={() => setShowGeneralMobility((v) => !v)}>
+          {showGeneralMobility ? '▲ ocultar biblioteca de mobilidade geral' : '▼ ver biblioteca de mobilidade geral'}
+        </SecondaryButton>
+        {showGeneralMobility && (
+          <div className="mt-4">
+            <GroupedExerciseChecklist groups={GENERAL_MOBILITY_GROUPS} />
+            <p className="mt-3 text-[11px] text-slate-500">{GENERAL_MOBILITY_SOURCE}</p>
+          </div>
+        )}
+      </Card>
 
       <SectionTitle>Dias de treino</SectionTitle>
       <Card className="mb-6 space-y-3">
