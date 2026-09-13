@@ -1,6 +1,8 @@
 export interface ChecklistItem {
   id: string
   nome: string
+  /** Como executar — descrição concreta da posição/movimento, pra identificar o exercício mesmo sem vídeo. */
+  execucao?: string
   /** Por que esse exercício/drill importa especificamente para o jiu-jitsu. */
   aplicacao: string
   /** Link direto de um vídeo específico já conferido — preferível a uma busca genérica. */

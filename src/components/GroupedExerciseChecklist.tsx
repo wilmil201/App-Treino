@@ -43,6 +43,7 @@ export function GroupedExerciseChecklist({ groups }: { groups: ChecklistGroup[] 
                     />
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium text-slate-200">{item.nome}</p>
+                      {item.execucao && <p className="mt-0.5 text-xs text-sky-300">{item.execucao}</p>}
                       <p className="text-xs text-slate-500">{item.aplicacao}</p>
                       <a
                         href={item.videoUrl ?? youtubeSearchUrl(item.videoQuery)}
