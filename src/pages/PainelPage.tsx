@@ -17,6 +17,7 @@ import { listLoggedExerciseNames } from '../lib/exerciseHistory'
 import { LIFT_LABEL, LIFT_COLOR } from '../lib/liftLabels'
 import type { LiftCategory } from '../lib/types'
 import { formatDateBR, getCicloOndulatorio, todayISO } from '../lib/dates'
+import { bodyWeightTrend, gasTrend, weeklyConsistency } from '../lib/performance'
 
 const LEVEL_STYLE: Record<Alert['level'], { border: string; bg: string; text: string; icon: string }> = {
   risco: { border: 'border-red-600', bg: 'bg-red-500/10', text: 'text-red-300', icon: '⚠️' },
@@ -49,6 +50,9 @@ export function PainelPage() {
   const liftSuggestions = (['agachamento', 'supino', 'terra'] as LiftCategory[]).map((cat) => suggestMainLift(cat, workouts, ciclo))
 
   const exerciseNames = listLoggedExerciseNames(workouts)
+  const gas = gasTrend(jjSessions)
+  const bodyWeight = bodyWeightTrend(workouts)
+  const consistency = weeklyConsistency(workouts, jjSessions, 8)
 
   return (
     <div className="pb-4">
@@ -167,6 +171,32 @@ export function PainelPage() {
       <Card className="mb-6">
         <BarChart data={weeks.map((w) => ({ label: formatDateBR(w.weekStart).slice(0, 5), value: w.volume }))} />
       </Card>
+
+      <SectionTitle>Condicionamento (gás) — jiu-jitsu</SectionTitle>
+      <Card className="mb-6">
+        <p className="mb-3 text-xs text-slate-500">
+          Autoavaliação de 1 a 10 por sessão de rola. Não é um teste de campo objetivo — é uma medida de percepção de
+          esforço: o que importa é a tendência ao longo do tempo, não o valor isolado.
+        </p>
+        <LineChart data={gas} color="#38bdf8" unit="/10" />
+      </Card>
+
+      <SectionTitle>Peso corporal</SectionTitle>
+      <Card className="mb-6">
+        <LineChart data={bodyWeight} color="#f472b6" unit="kg" />
+      </Card>
+
+      <SectionTitle>Consistência semanal</SectionTitle>
+      <div className="mb-6 space-y-4">
+        <Card>
+          <p className="mb-2 font-semibold text-emerald-400">Musculação</p>
+          <BarChart data={consistency.map((w) => ({ label: formatDateBR(w.weekStart).slice(0, 5), value: w.musculacao }))} color="#34d399" />
+        </Card>
+        <Card>
+          <p className="mb-2 font-semibold text-sky-400">Jiu-Jitsu</p>
+          <BarChart data={consistency.map((w) => ({ label: formatDateBR(w.weekStart).slice(0, 5), value: w.jiuJitsu }))} color="#38bdf8" />
+        </Card>
+      </div>
 
       <SectionTitle>Progressão por exercício</SectionTitle>
       <div className="mb-6">
