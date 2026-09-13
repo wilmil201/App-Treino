@@ -244,13 +244,13 @@ export function RegistrarPage() {
             // exercícios aeróbicos usam duração/esforço, não carga — sem sugestão de carga aqui.
           } else if (ex.liftCategory) {
             const s = suggestMainLift(ex.liftCategory, workouts, ciclo, anamnese)
-            if (s.hasHistory) {
-              suggestion = { suggestedLoad: s.suggestedLoad, reps: s.reps, note: s.note }
+            if (s.hasHistory || s.isCalibration) {
+              suggestion = { suggestedLoad: s.suggestedLoad, reps: s.reps, note: s.note, isCalibration: s.isCalibration }
             }
           } else {
             const s = suggestAccessory(ex.name, workouts, anamnese)
-            if (s.hasHistory) {
-              suggestion = { suggestedLoad: s.suggestedLoad, reps: s.reps, note: s.note }
+            if (s.hasHistory || s.isCalibration) {
+              suggestion = { suggestedLoad: s.suggestedLoad, reps: s.reps, note: s.note, isCalibration: s.isCalibration }
             }
           }
           return (

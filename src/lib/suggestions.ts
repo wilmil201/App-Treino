@@ -1,4 +1,4 @@
-import type { Anamnese, LiftCategory, Workout } from './types'
+import type { Anamnese, AthleteProfile, LiftCategory, NivelExperiencia, ObjetivoTreino, Workout } from './types'
 import type { CicloOndulatorio } from './dates'
 import { getLastFeedbackForCategory, getLiftSessions } from './calculations'
 import { getExerciseSessions, getLastFeedbackForExercise } from './exerciseHistory'
@@ -9,6 +9,49 @@ function round25(v: number): number {
 
 /** Motivos de não-conclusão que indicam sobrecarga real (a carga/volume estava acima do que o corpo aguentava). */
 const OVERLOAD_MOTIVOS = new Set(['fadiga', 'carga_pesada'])
+
+/**
+ * Faixas de repetições/RPE/descanso por objetivo de treino — diretrizes padrão de
+ * prescrição de força e condicionamento (linha NSCA/ACSM), não um valor inventado.
+ * Servem só de orientação para a série de calibração; não determinam uma carga.
+ */
+const GUIDANCE_BY_OBJETIVO: Record<ObjetivoTreino, { repRange: string; rpeRange: string; descanso: string }> = {
+  forca: { repRange: '3–6', rpeRange: '8–9', descanso: '3–5 min' },
+  hipertrofia: { repRange: '8–12', rpeRange: '7–9', descanso: '60–90s' },
+  resistencia: { repRange: '15–20', rpeRange: '6–8', descanso: '30–45s' },
+  emagrecimento: { repRange: '12–15', rpeRange: '6–8', descanso: '30–45s (priorize densidade de treino)' },
+  performance_esportiva: { repRange: '6–10', rpeRange: '7–8', descanso: '60–90s (priorize qualidade/velocidade do movimento)' },
+}
+
+const OBJETIVO_LABEL: Record<ObjetivoTreino, string> = {
+  forca: 'força',
+  hipertrofia: 'hipertrofia',
+  resistencia: 'resistência muscular / condicionamento',
+  emagrecimento: 'emagrecimento',
+  performance_esportiva: 'performance esportiva',
+}
+
+const NIVEL_HINT: Record<NivelExperiencia, string> = {
+  iniciante: 'comece com a menor carga disponível (barra vazia ou menor anilha)',
+  intermediario: 'comece com uma carga moderada, próxima da que usa em exercícios parecidos',
+  avancado: 'pode iniciar mais perto do que estima suportar, ajustando pela técnica',
+}
+
+/**
+ * Protocolo de calibração: a orientação correta quando não existe NENHUM dado (nem
+ * sessão registrada, nem anamnese) para um exercício. Nunca inventa uma carga —
+ * define como o atleta deve calibrar na própria sessão, com faixa de reps/RPE
+ * tecnicamente fundamentada no objetivo declarado.
+ */
+function buildCalibrationNote(profile: AthleteProfile | undefined): string {
+  if (!profile) {
+    return 'Sem carga de referência ainda. Comece leve e suba a carga a cada série até a última ficar exigente mas com técnica limpa (RPE ~7–8) — preencha sua ficha de anamnese em Programa (objetivo, esporte e nível) para receber uma faixa de repetições ajustada ao seu caso.'
+  }
+  const g = GUIDANCE_BY_OBJETIVO[profile.objetivo]
+  return `Sem carga de referência ainda. Protocolo de calibração (objetivo: ${OBJETIVO_LABEL[profile.objetivo]}): ${
+    NIVEL_HINT[profile.nivel]
+  } e suba a cada série até a última ficar exigente mas com técnica limpa — mire ${g.repRange} repetições, RPE ${g.rpeRange}, descanso de ${g.descanso}. Anote a carga usada: a próxima sugestão parte daí.`
+}
 
 /** Escalonamento simples e conservador da carga declarada na anamnese ao longo do
  * ciclo ondulatório de 4 semanas — só usado enquanto não há nenhuma sessão real
@@ -27,6 +70,8 @@ function norm(name: string): string {
 export interface LiftSuggestion {
   category: LiftCategory
   hasHistory: boolean
+  /** Não há carga alguma (nem sessão, nem anamnese) — a nota é um protocolo de calibração, não uma sugestão numérica. */
+  isCalibration?: boolean
   isDeload: boolean
   suggestedLoad: number | null
   /** Reps de referência (a última que o atleta realmente fez), só para exibição — nunca usada para extrapolar carga entre esquemas de rep diferentes. */
@@ -56,9 +101,10 @@ export function suggestMainLift(category: LiftCategory, workouts: Workout[], cic
       return {
         category,
         hasHistory: false,
+        isCalibration: true,
         isDeload: ciclo.isDeload,
         suggestedLoad: null,
-        note: 'Sem histórico ainda. Registre uma sessão ou preencha a ficha de anamnese em Programa para começar a receber sugestões de carga.',
+        note: buildCalibrationNote(anamnese?.profile),
       }
     }
     const suggestedLoad = scaleForWeek(baseline.load, ciclo.semana)
@@ -130,6 +176,8 @@ export function suggestMainLift(category: LiftCategory, workouts: Workout[], cic
 
 export interface AccessorySuggestion {
   hasHistory: boolean
+  /** Não há carga alguma (nem sessão, nem anamnese) — a nota é um protocolo de calibração, não uma sugestão numérica. */
+  isCalibration?: boolean
   suggestedLoad: number | null
   reps?: number
   note: string
@@ -145,7 +193,7 @@ export function suggestAccessory(exerciseName: string, workouts: Workout[], anam
   if (sessions.length === 0) {
     const baseline = anamnese?.accessories[norm(exerciseName)]
     if (!baseline) {
-      return { hasHistory: false, suggestedLoad: null, note: 'Sem histórico ainda.' }
+      return { hasHistory: false, isCalibration: true, suggestedLoad: null, note: buildCalibrationNote(anamnese?.profile) }
     }
     return {
       hasHistory: true,

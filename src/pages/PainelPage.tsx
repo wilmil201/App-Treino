@@ -83,7 +83,7 @@ export function PainelPage() {
                 {LIFT_LABEL[s.category]}
               </p>
               <p className="text-lg font-bold text-slate-100">
-                {s.suggestedLoad !== null ? `${s.suggestedLoad}kg${s.reps ? ` x${s.reps}` : ''}` : '—'}
+                {s.suggestedLoad !== null ? `${s.suggestedLoad}kg${s.reps ? ` x${s.reps}` : ''}` : s.isCalibration ? '🧭 calibração' : '—'}
               </p>
             </div>
             <p className="mt-1 text-xs text-slate-400">{s.note}</p>

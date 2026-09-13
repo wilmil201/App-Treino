@@ -78,9 +78,22 @@ export interface AnamneseBaseline {
   reps: number
 }
 
+export type ObjetivoTreino = 'forca' | 'hipertrofia' | 'resistencia' | 'emagrecimento' | 'performance_esportiva'
+export type NivelExperiencia = 'iniciante' | 'intermediario' | 'avancado'
+
+/** Perfil do atleta — objetivo de treino, esporte praticado e nível de experiência.
+ * Usado para dar orientação tecnicamente fundamentada (faixa de reps/RPE) quando ainda
+ * não existe nenhuma carga de referência para um exercício. */
+export interface AthleteProfile {
+  objetivo: ObjetivoTreino
+  esporte?: string
+  nivel: NivelExperiencia
+}
+
 /** Cargas de partida declaradas pelo atleta antes de qualquer sessão registrada — usadas
  * para já calcular e sugerir carga desde o primeiro treino, em vez de começar do zero. */
 export interface Anamnese {
+  profile?: AthleteProfile
   mainLifts: Partial<Record<LiftCategory, AnamneseBaseline>>
   /** Chave = nome do exercício, normalizado (trim + minúsculas), igual ao usado no histórico. */
   accessories: Record<string, AnamneseBaseline>

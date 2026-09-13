@@ -9,6 +9,7 @@ export interface ExerciseSuggestionView {
   suggestedLoad: number | null
   reps?: number
   note: string
+  isCalibration?: boolean
 }
 
 interface Props {
@@ -222,7 +223,14 @@ export function ExerciseCard({
         </div>
       )}
 
-      {!isAerobico && suggestion && (
+      {!isAerobico && suggestion && suggestion.isCalibration && (
+        <div className="rounded-lg border border-amber-700/60 bg-amber-500/10 p-2.5">
+          <p className="text-sm font-semibold text-amber-300">🧭 Protocolo de calibração</p>
+          <p className="text-xs text-amber-200/80">{suggestion.note}</p>
+        </div>
+      )}
+
+      {!isAerobico && suggestion && !suggestion.isCalibration && (
         <div className="rounded-lg border border-sky-700/60 bg-sky-500/10 p-2.5">
           <p className="text-sm font-semibold text-sky-300">
             💡 Sugestão:{' '}
