@@ -1,7 +1,8 @@
 import type { Anamnese, AthleteProfile, LiftCategory, NivelExperiencia, ObjetivoTreino, Workout } from './types'
 import type { CicloOndulatorio } from './dates'
-import { getLastFeedbackForCategory, getLiftSessions } from './calculations'
+import { getBestRecord, getLastFeedbackForCategory, getLiftSessions } from './calculations'
 import { getExerciseSessions, getLastFeedbackForExercise } from './exerciseHistory'
+import { estimateOneRepMax, loadForTarget } from './rpeChart'
 
 function round25(v: number): number {
   return Math.round(v / 2.5) * 2.5
@@ -53,15 +54,13 @@ function buildCalibrationNote(profile: AthleteProfile | undefined): string {
   } e suba a cada série até a última ficar exigente mas com técnica limpa — mire ${g.repRange} repetições, RPE ${g.rpeRange}, descanso de ${g.descanso}. Anote a carga usada: a próxima sugestão parte daí.`
 }
 
-/** Escalonamento simples e conservador da carga declarada na anamnese ao longo do
- * ciclo ondulatório de 4 semanas — só usado enquanto não há nenhuma sessão real
- * registrada; assim que existir histórico, a sugestão passa a se basear só nele. */
-function scaleForWeek(baseLoad: number, semana: 1 | 2 | 3 | 4): number {
-  if (semana === 1) return baseLoad
-  if (semana === 2) return round25(baseLoad * 1.025)
-  if (semana === 3) return round25(baseLoad * 1.05)
-  return round25(baseLoad * 0.7) // semana 4 = deload
-}
+/** RPE alvo numérico de cada semana do ciclo ondulatório — usado na tabela de %1RM. */
+const WEEK_TARGET_RPE: Record<1 | 2 | 3 | 4, number> = { 1: 7, 2: 7.75, 3: 8.25, 4: 6 }
+
+/** RPE assumido ao converter a carga declarada na anamnese em 1RM estimado — a
+ * anamnese só pergunta "carga x reps que você já consegue fazer", sem pedir RPE,
+ * então assumimos um esforço desafiador-mas-não-máximo (RPE 8) como padrão razoável. */
+const ANAMNESE_ASSUMED_RPE = 8
 
 function norm(name: string): string {
   return name.trim().toLowerCase()
@@ -74,7 +73,7 @@ export interface LiftSuggestion {
   isCalibration?: boolean
   isDeload: boolean
   suggestedLoad: number | null
-  /** Reps de referência (a última que o atleta realmente fez), só para exibição — nunca usada para extrapolar carga entre esquemas de rep diferentes. */
+  /** Reps-alvo do cálculo — sempre o número de reps que o atleta realmente faz nesse levantamento (última sessão ou anamnese), nunca um esquema inventado. */
   reps?: number
   note: string
   basedOn?: { date: string; load: number; reps: number; rpe: number }
@@ -83,78 +82,79 @@ export interface LiftSuggestion {
 /**
  * Sugestão de carga para a próxima sessão de um levantamento principal.
  *
- * Sempre parte da última carga REAL que o atleta registrou (não de uma
- * estimativa teórica de 1RM extrapolada para outro número de reps — isso
- * podia gerar cargas que a pessoa nunca provou conseguir levantar). Os
- * ajustes são incrementos pequenos e diretamente justificados pelo
- * histórico de RPE das últimas sessões — e pelo feedback que o atleta deu
- * ao finalizar o exercício (se não completou o planejado por fadiga ou
- * carga pesada, a sugestão nunca sobe).
+ * Calculada a partir do 1RM real do atleta (o melhor e1RM já registrado em
+ * qualquer sessão — nunca um número inventado) usando a tabela de %1RM por
+ * RPE x reps (Tuchscherer/RTS): dado o 1RM, o número de reps que o atleta
+ * de fato faz no levantamento e o RPE alvo da semana do ciclo ondulatório,
+ * a carga é calculada, não chutada.
+ *
+ * Duas camadas de segurança sempre podem ANULAR a matemática pra baixo
+ * (nunca pra cima): (1) se a última sessão chegou a RPE 10 num agachamento
+ * ou terra, a carga fica travada na última usada; (2) se o atleta relatou
+ * não ter completado por fadiga, carga pesada ou dor, a sugestão nunca sobe
+ * em relação à última carga real usada — o feedback manda mais que a fórmula.
  */
 export function suggestMainLift(category: LiftCategory, workouts: Workout[], ciclo: CicloOndulatorio, anamnese?: Anamnese): LiftSuggestion {
   const sessions = getLiftSessions(workouts, category)
   const lastFeedback = getLastFeedbackForCategory(workouts, category)
+  const targetRpe = WEEK_TARGET_RPE[ciclo.semana]
 
-  if (sessions.length === 0) {
-    const baseline = anamnese?.mainLifts[category]
-    if (!baseline) {
-      return {
-        category,
-        hasHistory: false,
-        isCalibration: true,
-        isDeload: ciclo.isDeload,
-        suggestedLoad: null,
-        note: buildCalibrationNote(anamnese?.profile),
-      }
+  const bestRecord = getBestRecord(workouts, category)
+  const baseline = anamnese?.mainLifts[category]
+
+  if (!bestRecord && !baseline) {
+    return {
+      category,
+      hasHistory: false,
+      isCalibration: true,
+      isDeload: ciclo.isDeload,
+      suggestedLoad: null,
+      note: buildCalibrationNote(anamnese?.profile),
     }
-    const suggestedLoad = scaleForWeek(baseline.load, ciclo.semana)
+  }
+
+  // 1RM: prioriza o melhor e1RM já registrado (dado real); só usa a anamnese
+  // (assumindo RPE 8, já que ela não pergunta RPE) enquanto não há sessão nenhuma.
+  const oneRepMax = bestRecord ? bestRecord.e1rm : estimateOneRepMax(baseline!.load, baseline!.reps, ANAMNESE_ASSUMED_RPE)
+  const oneRepMaxSource = bestRecord
+    ? `1RM estimado: ${Math.round(oneRepMax)}kg (seu melhor e1RM registrado, em ${bestRecord.date})`
+    : `1RM estimado: ${Math.round(oneRepMax)}kg (baseado na sua ficha de anamnese: ${baseline!.load}kg x${baseline!.reps})`
+
+  // Reps-alvo: o número de reps que o atleta realmente faz nesse levantamento
+  // (última sessão, ou o declarado na anamnese) — nunca um esquema inventado.
+  const targetReps = sessions.length > 0 ? sessions[sessions.length - 1].topSet.reps : baseline!.reps
+
+  if (!sessions.length) {
+    const suggestedLoad = loadForTarget(oneRepMax, targetReps, ciclo.isDeload ? 6 : targetRpe)
     return {
       category,
       hasHistory: true,
       isDeload: ciclo.isDeload,
       suggestedLoad,
-      reps: baseline.reps,
-      note: `Baseado na sua ficha de anamnese (${baseline.load}kg x${baseline.reps}), ajustado para a semana ${ciclo.semana}/4 do ciclo${
-        ciclo.isDeload ? ' (deload)' : ''
-      }. Assim que você registrar uma sessão real, a sugestão passa a se basear nela.`,
+      reps: targetReps,
+      note: `${oneRepMaxSource}. Semana ${ciclo.semana}/4${ciclo.isDeload ? ' (deload)' : ''}: carga calculada para ${targetReps} reps @ RPE ${
+        ciclo.isDeload ? 6 : targetRpe
+      }. Assim que você registrar uma sessão real, o 1RM passa a vir dela.`,
     }
   }
 
   const last = sessions[sessions.length - 1]
   const basedOn = { date: last.date, load: last.topSet.load, reps: last.topSet.reps, rpe: last.topSet.rpe }
 
+  let suggestedLoad = loadForTarget(oneRepMax, targetReps, ciclo.isDeload ? 6 : targetRpe)
+  let note = `${oneRepMaxSource}. Semana ${ciclo.semana}/4${ciclo.isDeload ? ' (deload)' : ''}: carga calculada para ${targetReps} reps @ RPE ${
+    ciclo.isDeload ? 6 : targetRpe
+  }.`
+
   if (ciclo.isDeload) {
-    return {
-      category,
-      hasHistory: true,
-      isDeload: true,
-      suggestedLoad: round25(last.topSet.load * 0.6),
-      reps: last.topSet.reps,
-      note: `Semana de deload: reduza a carga e o volume em relação à sua última sessão (${last.topSet.load}kg x${last.topSet.reps} @ RPE ${last.topSet.rpe}). RPE alvo ≤ 6.`,
-      basedOn,
-    }
-  }
-
-  // Ponto de partida: a mesma carga que o atleta realmente usou e conseguiu completar.
-  let suggestedLoad = last.topSet.load
-  let note = `Repita a carga da sua última sessão (${last.topSet.load}kg x${last.topSet.reps} @ RPE ${last.topSet.rpe}) — alvo desta semana: ${ciclo.rpeAlvo}.`
-
-  if (sessions.length >= 2) {
-    const last2 = sessions.slice(-2)
-    const allHigh = last2.every((s) => s.topSet.rpe >= 9.5)
-    const allLow = last2.every((s) => s.topSet.rpe <= 7)
-    if (allHigh) {
-      suggestedLoad = round25(last.topSet.load * 0.925)
-      note = `Reduza ~5–10% em relação à sua última carga (${last.topSet.load}kg): RPE ≥ 9,5 nas últimas 2 sessões (fadiga acumulada).`
-    } else if (allLow) {
-      suggestedLoad = round25(last.topSet.load + 3.75)
-      note = `Suba 2,5–5kg em relação à sua última carga (${last.topSet.load}kg): RPE ≤ 7 nas últimas 2 sessões (sobrando margem).`
-    }
+    // Camada de segurança extra no deload: nunca ultrapassa a última carga real usada.
+    suggestedLoad = Math.min(suggestedLoad, last.topSet.load)
+    return { category, hasHistory: true, isDeload: true, suggestedLoad, reps: targetReps, note, basedOn }
   }
 
   if ((category === 'agachamento' || category === 'terra') && last.topSet.rpe >= 10) {
     suggestedLoad = Math.min(suggestedLoad, last.topSet.load)
-    note = 'Carga limitada: última sessão chegou à falha real (RPE 10). Priorize técnica antes de subir.'
+    note = `Carga limitada: última sessão (${last.topSet.load}kg) chegou à falha real (RPE 10). Priorize técnica antes de subir — ${oneRepMaxSource}.`
   }
 
   // O feedback do atleta manda mais do que a matemática do RPE: se ele disse
@@ -171,7 +171,7 @@ export function suggestMainLift(category: LiftCategory, workouts: Workout[], cic
     }
   }
 
-  return { category, hasHistory: true, isDeload: false, suggestedLoad, reps: last.topSet.reps, note, basedOn }
+  return { category, hasHistory: true, isDeload: false, suggestedLoad, reps: targetReps, note, basedOn }
 }
 
 export interface AccessorySuggestion {
