@@ -1,3 +1,5 @@
+import { SACO_BATER_REFERENCE_VIDEO } from './referenceVideos'
+
 export type RoutineEquipment = 'tatame' | 'bola_suica' | 'saco_bater' | 'nenhum'
 
 export interface RoutineItem {
@@ -171,6 +173,7 @@ export const HOME_MOBILITY_ROUTINE: RoutineBlock[] = [
         equipamento: 'saco_bater',
         aplicacao: 'Treina o footwork de passagem de guarda em pé, sozinho.',
         videoQuery: 'guard passing drill heavy bag jiu-jitsu',
+        videoUrl: SACO_BATER_REFERENCE_VIDEO.url,
       },
       {
         id: 'entrada-queda-saco',
@@ -179,6 +182,7 @@ export const HOME_MOBILITY_ROUTINE: RoutineBlock[] = [
         equipamento: 'saco_bater',
         aplicacao: 'Repetição de entrada de queda com alvo fixo — constrói confiança e timing.',
         videoQuery: 'takedown entry heavy bag drill',
+        videoUrl: SACO_BATER_REFERENCE_VIDEO.url,
       },
     ],
   },

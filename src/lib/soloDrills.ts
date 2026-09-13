@@ -1,4 +1,5 @@
 import type { ChecklistGroup } from './checklist'
+import { SACO_BATER_REFERENCE_VIDEO } from './referenceVideos'
 
 /** Drills solo (sem parceiro) com elástico, bola suíça e saco de bater — para treinar
  * padrões de movimento do jiu-jitsu fora do tatame/sem companheiro de treino. */
@@ -72,24 +73,28 @@ export const SOLO_DRILL_GROUPS: ChecklistGroup[] = [
         nome: 'Drill de passagem de guarda (kick pass / X-pass)',
         aplicacao: 'Treina o footwork de passagem de guarda em pé, sozinho.',
         videoQuery: 'guard passing drill heavy bag jiu-jitsu',
+        videoUrl: SACO_BATER_REFERENCE_VIDEO.url,
       },
       {
         id: 'entrada-queda-saco',
         nome: 'Entrada de queda (shoot) no saco',
         aplicacao: 'Repetição de entrada de queda com alvo fixo — constrói confiança e timing.',
         videoQuery: 'takedown entry heavy bag drill',
+        videoUrl: SACO_BATER_REFERENCE_VIDEO.url,
       },
       {
         id: 'finalizacao-saco',
         nome: 'Drill de finalização (mecânica de chave)',
         aplicacao: 'Repetição da mecânica de finalização sem depender de parceiro.',
         videoQuery: 'submission drill heavy bag armbar mechanics',
+        videoUrl: SACO_BATER_REFERENCE_VIDEO.url,
       },
       {
         id: 'troca-posicao-saco',
         nome: 'Troca de posição / pressão em cima',
         aplicacao: 'Simula transições de montada/100kg mantendo pressão no saco.',
         videoQuery: 'top pressure position change heavy bag drill',
+        videoUrl: SACO_BATER_REFERENCE_VIDEO.url,
       },
     ],
   },

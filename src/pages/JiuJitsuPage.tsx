@@ -9,8 +9,10 @@ import { JJSessionForm } from '../components/JJSessionForm'
 import { WarmupChecklist } from '../components/WarmupChecklist'
 import { MobilityRoutineSession } from '../components/MobilityRoutineSession'
 import { GroupedExerciseChecklist } from '../components/GroupedExerciseChecklist'
+import { ReferenceVideoList } from '../components/ReferenceVideoList'
 import { MOBILITY_GROUPS } from '../lib/mobility'
 import { SOLO_DRILL_GROUPS } from '../lib/soloDrills'
+import { GENERAL_REFERENCE_VIDEOS } from '../lib/referenceVideos'
 import type { JJSession } from '../lib/types'
 
 const TYPE_LABEL: Record<JJSession['type'], string> = {
@@ -90,6 +92,9 @@ export function JiuJitsuPage() {
           Sessão completa e sequenciada — quadril, ombros, pulsos, tornozelos, pescoço, core e agilidade, com tatame,
           bola suíça e saco de bater. Não é o aquecimento pré-treino: é um treino próprio, pra fazer em qualquer dia.
         </p>
+        <div className="mb-4">
+          <ReferenceVideoList title="Vídeos de referência selecionados por você" videos={GENERAL_REFERENCE_VIDEOS} />
+        </div>
         <MobilityRoutineSession />
       </div>
 
