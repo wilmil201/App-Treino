@@ -8,12 +8,14 @@ import { MesocicloBanner } from '../components/MesocicloBanner'
 import { JJSessionForm } from '../components/JJSessionForm'
 import { WarmupChecklist } from '../components/WarmupChecklist'
 import { CoachTipsCard } from '../components/CoachTipsCard'
+import { TTBCalculator } from '../components/TTBCalculator'
 import { MobilityRoutineSession } from '../components/MobilityRoutineSession'
 import { GroupedExerciseChecklist } from '../components/GroupedExerciseChecklist'
 import { ReferenceVideoList } from '../components/ReferenceVideoList'
 import { MOBILITY_GROUPS } from '../lib/mobility'
 import { SOLO_DRILL_GROUPS } from '../lib/soloDrills'
 import { GENERAL_REFERENCE_VIDEOS } from '../lib/referenceVideos'
+import { ROLA_CATEGORIA_LABEL } from '../lib/jjPlanning'
 import type { JJSession } from '../lib/types'
 
 const TYPE_LABEL: Record<JJSession['type'], string> = {
@@ -92,6 +94,10 @@ export function JiuJitsuPage() {
       </div>
 
       <div className="mb-6">
+        <TTBCalculator />
+      </div>
+
+      <div className="mb-6">
         <SectionTitle>Rotina de mobilidade e drills (casa)</SectionTitle>
         <p className="-mt-2 mb-3 text-xs text-slate-500">
           Sessão completa e sequenciada — quadril, ombros, pulsos, tornozelos, pescoço, core e agilidade, com tatame,
@@ -141,6 +147,7 @@ export function JiuJitsuPage() {
                 <span className="text-sm font-semibold">{formatDateBR(s.date)}</span>
                 <Badge>{TYPE_LABEL[s.type]}</Badge>
                 {s.intensity && <Badge tone="emerald">{INTENSITY_LABEL[s.intensity]}</Badge>}
+                {s.categoria && <Badge tone="default">{ROLA_CATEGORIA_LABEL[s.categoria]}</Badge>}
               </div>
               <p className="mt-1 text-xs text-slate-400">
                 {s.type === 'drill'

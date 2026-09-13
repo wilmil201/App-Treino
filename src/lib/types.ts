@@ -101,6 +101,8 @@ export interface Anamnese {
 
 export type JJSessionType = 'sessao1' | 'sessao2' | 'drill'
 export type JJIntensity = 'forte' | 'moderado' | 'leve'
+/** Categoria de róla pelo Método Se7e — duração define o estímulo bioenergético predominante. */
+export type RolaCategoria = 'muito_curto' | 'curto' | 'longo' | 'tempo_competicao'
 
 export interface JJSession {
   id: string
@@ -114,6 +116,7 @@ export interface JJSession {
   gas?: number
   drillSeries?: number
   drillReps?: number
+  categoria?: RolaCategoria
 }
 
 export interface WarmupSubItem {

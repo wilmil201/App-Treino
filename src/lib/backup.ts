@@ -132,13 +132,14 @@ export function buildWorkoutsCsv(workouts: Workout[]): string {
 }
 
 export function buildJJSessionsCsv(sessions: JJSession[]): string {
-  const header = ['Data', 'Tipo', 'Mesociclo', 'Intensidade', 'Duração (min)', 'Rounds', 'RPE', 'Gás (0-10)', 'Séries drill', 'Reps drill']
+  const header = ['Data', 'Tipo', 'Mesociclo', 'Categoria de róla', 'Intensidade', 'Duração (min)', 'Rounds', 'RPE', 'Gás (0-10)', 'Séries drill', 'Reps drill']
   const rows: (string | number | undefined)[][] = [header]
   for (const s of [...sessions].sort((a, b) => a.date.localeCompare(b.date))) {
     rows.push([
       s.date,
       s.type,
       s.mesocicloIndex + 1,
+      s.categoria ?? '',
       s.intensity ?? '',
       s.duration ?? '',
       s.rounds ?? '',

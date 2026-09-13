@@ -18,6 +18,7 @@ import { LIFT_LABEL, LIFT_COLOR } from '../lib/liftLabels'
 import type { LiftCategory } from '../lib/types'
 import { formatDateBR, getCicloOndulatorio, todayISO } from '../lib/dates'
 import { bodyWeightTrend, gasTrend, weeklyConsistency } from '../lib/performance'
+import { ROLA_CATEGORIA_LABEL, rolaCategoriaBreakdown } from '../lib/jjPlanning'
 
 const LEVEL_STYLE: Record<Alert['level'], { border: string; bg: string; text: string; icon: string }> = {
   risco: { border: 'border-red-600', bg: 'bg-red-500/10', text: 'text-red-300', icon: '⚠️' },
@@ -51,6 +52,12 @@ export function PainelPage() {
 
   const exerciseNames = listLoggedExerciseNames(workouts)
   const gas = gasTrend(jjSessions)
+  const rolaStats = rolaCategoriaBreakdown(jjSessions)
+  const rolaStatsComData = rolaStats.filter((s) => s.avgGas !== null)
+  const melhorCategoria =
+    rolaStatsComData.length >= 2 ? rolaStatsComData.reduce((a, b) => ((b.avgGas as number) > (a.avgGas as number) ? b : a)) : null
+  const piorCategoria =
+    rolaStatsComData.length >= 2 ? rolaStatsComData.reduce((a, b) => ((b.avgGas as number) < (a.avgGas as number) ? b : a)) : null
   const bodyWeight = bodyWeightTrend(workouts)
   const consistency = weeklyConsistency(workouts, jjSessions, 8)
 
@@ -179,6 +186,29 @@ export function PainelPage() {
           esforço: o que importa é a tendência ao longo do tempo, não o valor isolado.
         </p>
         <LineChart data={gas} color="#38bdf8" unit="/10" />
+        {rolaStats.length > 0 && (
+          <div className="mt-4 border-t border-slate-800 pt-3">
+            <p className="mb-2 text-xs font-semibold text-slate-300">Gás médio por categoria de róla</p>
+            <ul className="space-y-1.5">
+              {rolaStats.map((s) => (
+                <li key={s.categoria} className="flex items-center justify-between text-sm">
+                  <span className="text-slate-300">
+                    {ROLA_CATEGORIA_LABEL[s.categoria]} <span className="text-xs text-slate-500">({s.count})</span>
+                  </span>
+                  <span className={`font-semibold ${s.avgGas !== null && s.avgGas < 5 ? 'text-amber-300' : 'text-emerald-300'}`}>
+                    {s.avgGas !== null ? s.avgGas.toFixed(1) : '—'}/10
+                  </span>
+                </li>
+              ))}
+            </ul>
+            {melhorCategoria && piorCategoria && melhorCategoria.categoria !== piorCategoria.categoria && (
+              <p className="mt-2 text-xs text-slate-500">
+                Ponto forte: <span className="text-emerald-400">{ROLA_CATEGORIA_LABEL[melhorCategoria.categoria]}</span> · precisa de
+                atenção: <span className="text-amber-400">{ROLA_CATEGORIA_LABEL[piorCategoria.categoria]}</span>
+              </p>
+            )}
+          </div>
+        )}
       </Card>
 
       <SectionTitle>Peso corporal</SectionTitle>

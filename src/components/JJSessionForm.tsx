@@ -1,8 +1,9 @@
-import { useState } from 'react'
-import type { JJIntensity, JJSession, JJSessionType } from '../lib/types'
+import { useEffect, useState } from 'react'
+import type { JJIntensity, JJSession, JJSessionType, RolaCategoria } from '../lib/types'
 import { generateId } from '../lib/id'
 import { todayISO } from '../lib/dates'
 import { SESSION_PROTOCOLS } from '../lib/jjProtocols'
+import { ROLA_CATEGORIA_DESC, ROLA_CATEGORIA_LABEL, suggestRolaFocus } from '../lib/jjPlanning'
 import { youtubeSearchUrl } from '../lib/youtube'
 import { Card, PrimaryButton } from './ui'
 
@@ -27,9 +28,16 @@ export function JJSessionForm({ mesocicloIndex, onSave }: { mesocicloIndex: numb
   const [rpe, setRpe] = useState('')
   const [gas, setGas] = useState('')
   const [drillSeries, setDrillSeries] = useState('')
+  const [categoria, setCategoria] = useState<RolaCategoria | null>(null)
 
   const isDrill = type === 'drill'
   const protocol = SESSION_PROTOCOLS[mesocicloIndex]
+  const focusSuggestion = !isDrill ? suggestRolaFocus(mesocicloIndex, type) : null
+
+  useEffect(() => {
+    if (focusSuggestion) setCategoria(focusSuggestion.categoria)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [type, mesocicloIndex])
 
   function reset() {
     setDuration('')
@@ -37,6 +45,7 @@ export function JJSessionForm({ mesocicloIndex, onSave }: { mesocicloIndex: numb
     setRpe('')
     setGas('')
     setDrillSeries('')
+    if (focusSuggestion) setCategoria(focusSuggestion.categoria)
   }
 
   function handleSave() {
@@ -55,6 +64,7 @@ export function JJSessionForm({ mesocicloIndex, onSave }: { mesocicloIndex: numb
           rounds: rounds === '' ? undefined : Number(rounds),
           rpe: rpe === '' ? undefined : Number(rpe),
           gas: gas === '' ? undefined : Number(gas),
+          categoria: categoria ?? undefined,
         }
     onSave(session)
     reset()
@@ -101,6 +111,33 @@ export function JJSessionForm({ mesocicloIndex, onSave }: { mesocicloIndex: numb
           <p className="rounded-lg bg-slate-800/70 p-2.5 text-xs text-slate-400">
             {type === 'sessao1' ? protocol.sessao1 : protocol.sessao2}
           </p>
+
+          {focusSuggestion && (
+            <div>
+              <span className="mb-1 block text-xs text-slate-400">
+                Categoria de róla (meta do dia: {ROLA_CATEGORIA_LABEL[focusSuggestion.categoria]})
+              </span>
+              <div className="grid grid-cols-2 gap-2">
+                {(Object.keys(ROLA_CATEGORIA_LABEL) as RolaCategoria[]).map((key) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setCategoria(key)}
+                    aria-pressed={categoria === key}
+                    className={`rounded-lg border px-2 py-2 text-xs font-semibold ${
+                      categoria === key ? 'border-emerald-500 bg-emerald-500/15 text-emerald-300' : 'border-slate-700 bg-slate-900 text-slate-300'
+                    }`}
+                  >
+                    {ROLA_CATEGORIA_LABEL[key]}
+                    {focusSuggestion.categoria === key ? ' ✓' : ''}
+                  </button>
+                ))}
+              </div>
+              <p className="mt-1.5 text-xs text-slate-500">
+                {categoria ? ROLA_CATEGORIA_DESC[categoria] : ''} {categoria === focusSuggestion.categoria ? `— ${focusSuggestion.motivo}` : '— você mudou da meta sugerida, tudo bem se foi o que rolou na aula.'}
+              </p>
+            </div>
+          )}
 
           <div>
             <span className="mb-1 block text-xs text-slate-400">Intensidade planejada</span>

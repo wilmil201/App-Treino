@@ -3,6 +3,7 @@ import type { JJSession, Workout } from '../lib/types'
 import { workoutVolume } from '../lib/calculations'
 import { formatDateBR, weekdayOfISO } from '../lib/dates'
 import { weekdayLabel } from '../lib/schedule'
+import { ROLA_CATEGORIA_LABEL } from '../lib/jjPlanning'
 import { Card } from './ui'
 
 type HistoryEvent =
@@ -85,6 +86,7 @@ export function HistoryList({ workouts, jjSessions }: { workouts: Workout[]; jjS
                         </p>
                         <p className="text-xs text-slate-400">
                           {[
+                            ev.session.categoria ? ROLA_CATEGORIA_LABEL[ev.session.categoria] : null,
                             ev.session.intensity,
                             ev.session.duration ? `${ev.session.duration}min` : null,
                             ev.session.rounds ? `${ev.session.rounds} rounds` : null,
