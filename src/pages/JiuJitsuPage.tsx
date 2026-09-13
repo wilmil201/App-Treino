@@ -6,6 +6,9 @@ import { Card, SectionTitle, Badge } from '../components/ui'
 import { MesocicloBanner } from '../components/MesocicloBanner'
 import { JJSessionForm } from '../components/JJSessionForm'
 import { WarmupChecklist } from '../components/WarmupChecklist'
+import { GroupedExerciseChecklist } from '../components/GroupedExerciseChecklist'
+import { MOBILITY_GROUPS } from '../lib/mobility'
+import { SOLO_DRILL_GROUPS } from '../lib/soloDrills'
 import type { JJSession } from '../lib/types'
 
 const TYPE_LABEL: Record<JJSession['type'], string> = {
@@ -75,6 +78,22 @@ export function JiuJitsuPage() {
       <div className="mb-6">
         <SectionTitle>Aquecimento</SectionTitle>
         <WarmupChecklist />
+      </div>
+
+      <div className="mb-6">
+        <SectionTitle>Mobilidade específica para jiu-jitsu</SectionTitle>
+        <p className="-mt-2 mb-3 text-xs text-slate-500">
+          Organizada por região, com a aplicação direta no seu jogo — não é mobilidade genérica de academia.
+        </p>
+        <GroupedExerciseChecklist groups={MOBILITY_GROUPS} />
+      </div>
+
+      <div className="mb-6">
+        <SectionTitle>Treino solo com equipamento</SectionTitle>
+        <p className="-mt-2 mb-3 text-xs text-slate-500">
+          Drills pra treinar padrões de movimento do jiu-jitsu sem parceiro — elástico, bola suíça e saco de bater.
+        </p>
+        <GroupedExerciseChecklist groups={SOLO_DRILL_GROUPS} />
       </div>
 
       <SectionTitle>Histórico de sessões</SectionTitle>
