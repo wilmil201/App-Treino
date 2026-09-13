@@ -1,11 +1,13 @@
+import { useState } from 'react'
 import { useData } from '../context/DataContext'
 import { useToast } from '../context/ToastContext'
 import { getMesociclo, formatDateBR, todayISO } from '../lib/dates'
 import { checkProgressionReadiness } from '../lib/progression'
-import { Card, SectionTitle, Badge } from '../components/ui'
+import { Card, SectionTitle, SecondaryButton, Badge } from '../components/ui'
 import { MesocicloBanner } from '../components/MesocicloBanner'
 import { JJSessionForm } from '../components/JJSessionForm'
 import { WarmupChecklist } from '../components/WarmupChecklist'
+import { MobilityRoutineSession } from '../components/MobilityRoutineSession'
 import { GroupedExerciseChecklist } from '../components/GroupedExerciseChecklist'
 import { MOBILITY_GROUPS } from '../lib/mobility'
 import { SOLO_DRILL_GROUPS } from '../lib/soloDrills'
@@ -26,6 +28,7 @@ const INTENSITY_LABEL: Record<string, string> = {
 export function JiuJitsuPage() {
   const { jjSessions, workouts, upsertJJSession, deleteJJSession } = useData()
   const { showToast } = useToast()
+  const [showLibrary, setShowLibrary] = useState(false)
 
   const today = todayISO()
   const macrocicloStart = jjSessions.length > 0 ? [...jjSessions].map((s) => s.date).sort()[0] : null
@@ -77,23 +80,41 @@ export function JiuJitsuPage() {
 
       <div className="mb-6">
         <SectionTitle>Aquecimento</SectionTitle>
+        <p className="-mt-2 mb-3 text-xs text-slate-500">Antes de treinar jiu-jitsu, sempre.</p>
         <WarmupChecklist />
       </div>
 
       <div className="mb-6">
-        <SectionTitle>Mobilidade específica para jiu-jitsu</SectionTitle>
+        <SectionTitle>Rotina de mobilidade e drills (casa)</SectionTitle>
         <p className="-mt-2 mb-3 text-xs text-slate-500">
-          Organizada por região, com a aplicação direta no seu jogo — não é mobilidade genérica de academia.
+          Sessão completa e sequenciada — quadril, ombros, pulsos, tornozelos, pescoço, core e agilidade, com tatame,
+          bola suíça e saco de bater. Não é o aquecimento pré-treino: é um treino próprio, pra fazer em qualquer dia.
         </p>
-        <GroupedExerciseChecklist groups={MOBILITY_GROUPS} />
+        <MobilityRoutineSession />
       </div>
 
       <div className="mb-6">
-        <SectionTitle>Treino solo com equipamento</SectionTitle>
-        <p className="-mt-2 mb-3 text-xs text-slate-500">
-          Drills pra treinar padrões de movimento do jiu-jitsu sem parceiro — elástico, bola suíça e saco de bater.
-        </p>
-        <GroupedExerciseChecklist groups={SOLO_DRILL_GROUPS} />
+        <SecondaryButton onClick={() => setShowLibrary((v) => !v)}>
+          {showLibrary ? '▲ ocultar biblioteca completa de exercícios' : '▼ ver biblioteca completa de exercícios'}
+        </SecondaryButton>
+        {showLibrary && (
+          <div className="mt-4 space-y-6">
+            <div>
+              <SectionTitle>Mobilidade específica para jiu-jitsu</SectionTitle>
+              <p className="-mt-2 mb-3 text-xs text-slate-500">
+                Todos os exercícios de mobilidade, avulsos, caso queira montar sua própria sequência.
+              </p>
+              <GroupedExerciseChecklist groups={MOBILITY_GROUPS} />
+            </div>
+            <div>
+              <SectionTitle>Treino solo com equipamento</SectionTitle>
+              <p className="-mt-2 mb-3 text-xs text-slate-500">
+                Todos os drills com elástico, bola suíça e saco de bater, avulsos.
+              </p>
+              <GroupedExerciseChecklist groups={SOLO_DRILL_GROUPS} />
+            </div>
+          </div>
+        )}
       </div>
 
       <SectionTitle>Histórico de sessões</SectionTitle>
