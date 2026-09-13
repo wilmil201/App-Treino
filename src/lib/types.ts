@@ -59,6 +59,19 @@ export interface Workout {
   summary?: WorkoutSummary
 }
 
+export interface AnamneseBaseline {
+  load: number
+  reps: number
+}
+
+/** Cargas de partida declaradas pelo atleta antes de qualquer sessão registrada — usadas
+ * para já calcular e sugerir carga desde o primeiro treino, em vez de começar do zero. */
+export interface Anamnese {
+  mainLifts: Partial<Record<LiftCategory, AnamneseBaseline>>
+  /** Chave = nome do exercício, normalizado (trim + minúsculas), igual ao usado no histórico. */
+  accessories: Record<string, AnamneseBaseline>
+}
+
 export type JJSessionType = 'sessao1' | 'sessao2' | 'drill'
 export type JJIntensity = 'forte' | 'moderado' | 'leve'
 

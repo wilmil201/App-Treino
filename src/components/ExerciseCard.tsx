@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { ExerciseFeedback, ExerciseLog, FeedbackMotivo, SetLog } from '../lib/types'
 import { generateId } from '../lib/id'
 import { youtubeSearchUrl } from '../lib/youtube'
@@ -86,7 +86,11 @@ export function ExerciseCard({
   onSwapExercise,
   onSaveFeedback,
 }: Props) {
-  const [newSet, setNewSet] = useState({ load: '', reps: '', rpe: '' })
+  const [newSet, setNewSet] = useState(() => ({
+    load: suggestion?.suggestedLoad != null ? String(suggestion.suggestedLoad) : '',
+    reps: suggestion?.reps != null ? String(suggestion.reps) : '',
+    rpe: '',
+  }))
   const [resetKey, setResetKey] = useState(0)
   const [showSubstitutes, setShowSubstitutes] = useState(false)
   const [feedbackOpen, setFeedbackOpen] = useState(false)
@@ -95,6 +99,19 @@ export function ExerciseCard({
   const [obsDraft, setObsDraft] = useState('')
 
   const canAdd = newSet.load !== '' && newSet.reps !== '' && newSet.rpe !== ''
+
+  // A sugestão às vezes só fica disponível depois da primeira montagem do card
+  // (ex: o app já estava montado quando o atleta preenche a ficha de anamnese
+  // no onboarding). Preenche os campos de nova série assim que ela chegar,
+  // mas só se o atleta ainda não tiver digitado nada — e força a remontagem
+  // do NumberField (via resetKey) pra ele pegar o novo valor inicial.
+  useEffect(() => {
+    if (suggestion?.suggestedLoad == null) return
+    if (newSet.load !== '' || newSet.reps !== '') return
+    setNewSet({ load: String(suggestion.suggestedLoad), reps: suggestion.reps != null ? String(suggestion.reps) : '', rpe: '' })
+    setResetKey((k) => k + 1)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [suggestion?.suggestedLoad, suggestion?.reps])
 
   const substituteOptions = [...customSubstitutes, ...getBuiltInSubstitutes(exercise)].filter(
     (s, idx, arr) => arr.indexOf(s) === idx && s.toLowerCase() !== exercise.name.toLowerCase(),

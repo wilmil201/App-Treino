@@ -18,7 +18,7 @@ function formatVolume(v: number): string {
 }
 
 export function RegistrarPage() {
-  const { program, workouts, schedule, upsertWorkout } = useData()
+  const { program, workouts, schedule, anamnese, upsertWorkout } = useData()
   const { showToast } = useToast()
 
   const today = todayISO()
@@ -216,12 +216,12 @@ export function RegistrarPage() {
           const detail = programExercise?.detail
           let suggestion: ExerciseSuggestionView | null = null
           if (ex.liftCategory) {
-            const s = suggestMainLift(ex.liftCategory, workouts, ciclo)
+            const s = suggestMainLift(ex.liftCategory, workouts, ciclo, anamnese)
             if (s.hasHistory) {
               suggestion = { suggestedLoad: s.suggestedLoad, reps: s.reps, note: s.note }
             }
           } else {
-            const s = suggestAccessory(ex.name, workouts)
+            const s = suggestAccessory(ex.name, workouts, anamnese)
             if (s.hasHistory) {
               suggestion = { suggestedLoad: s.suggestedLoad, reps: s.reps, note: s.note }
             }

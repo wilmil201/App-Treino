@@ -1,4 +1,4 @@
-import type { LiftCategory, Workout } from './types'
+import type { Anamnese, LiftCategory, Workout } from './types'
 import type { CicloOndulatorio } from './dates'
 import { getLastFeedbackForCategory, getLiftSessions } from './calculations'
 import { getExerciseSessions, getLastFeedbackForExercise } from './exerciseHistory'
@@ -9,6 +9,20 @@ function round25(v: number): number {
 
 /** Motivos de não-conclusão que indicam sobrecarga real (a carga/volume estava acima do que o corpo aguentava). */
 const OVERLOAD_MOTIVOS = new Set(['fadiga', 'carga_pesada'])
+
+/** Escalonamento simples e conservador da carga declarada na anamnese ao longo do
+ * ciclo ondulatório de 4 semanas — só usado enquanto não há nenhuma sessão real
+ * registrada; assim que existir histórico, a sugestão passa a se basear só nele. */
+function scaleForWeek(baseLoad: number, semana: 1 | 2 | 3 | 4): number {
+  if (semana === 1) return baseLoad
+  if (semana === 2) return round25(baseLoad * 1.025)
+  if (semana === 3) return round25(baseLoad * 1.05)
+  return round25(baseLoad * 0.7) // semana 4 = deload
+}
+
+function norm(name: string): string {
+  return name.trim().toLowerCase()
+}
 
 export interface LiftSuggestion {
   category: LiftCategory
@@ -32,17 +46,31 @@ export interface LiftSuggestion {
  * ao finalizar o exercício (se não completou o planejado por fadiga ou
  * carga pesada, a sugestão nunca sobe).
  */
-export function suggestMainLift(category: LiftCategory, workouts: Workout[], ciclo: CicloOndulatorio): LiftSuggestion {
+export function suggestMainLift(category: LiftCategory, workouts: Workout[], ciclo: CicloOndulatorio, anamnese?: Anamnese): LiftSuggestion {
   const sessions = getLiftSessions(workouts, category)
   const lastFeedback = getLastFeedbackForCategory(workouts, category)
 
   if (sessions.length === 0) {
+    const baseline = anamnese?.mainLifts[category]
+    if (!baseline) {
+      return {
+        category,
+        hasHistory: false,
+        isDeload: ciclo.isDeload,
+        suggestedLoad: null,
+        note: 'Sem histórico ainda. Registre uma sessão ou preencha a ficha de anamnese em Programa para começar a receber sugestões de carga.',
+      }
+    }
+    const suggestedLoad = scaleForWeek(baseline.load, ciclo.semana)
     return {
       category,
-      hasHistory: false,
+      hasHistory: true,
       isDeload: ciclo.isDeload,
-      suggestedLoad: null,
-      note: 'Sem histórico ainda. Registre uma sessão para começar a receber sugestões de carga.',
+      suggestedLoad,
+      reps: baseline.reps,
+      note: `Baseado na sua ficha de anamnese (${baseline.load}kg x${baseline.reps}), ajustado para a semana ${ciclo.semana}/4 do ciclo${
+        ciclo.isDeload ? ' (deload)' : ''
+      }. Assim que você registrar uma sessão real, a sugestão passa a se basear nela.`,
     }
   }
 
@@ -110,12 +138,21 @@ export interface AccessorySuggestion {
 
 /** Progressão dupla simples: parte sempre da carga que o atleta realmente usou por último,
  * e também respeita o feedback dado ao finalizar o exercício (não completou = não sobe). */
-export function suggestAccessory(exerciseName: string, workouts: Workout[]): AccessorySuggestion {
+export function suggestAccessory(exerciseName: string, workouts: Workout[], anamnese?: Anamnese): AccessorySuggestion {
   const sessions = getExerciseSessions(workouts, exerciseName)
   const lastFeedback = getLastFeedbackForExercise(workouts, exerciseName)
 
   if (sessions.length === 0) {
-    return { hasHistory: false, suggestedLoad: null, note: 'Sem histórico ainda.' }
+    const baseline = anamnese?.accessories[norm(exerciseName)]
+    if (!baseline) {
+      return { hasHistory: false, suggestedLoad: null, note: 'Sem histórico ainda.' }
+    }
+    return {
+      hasHistory: true,
+      suggestedLoad: baseline.load,
+      reps: baseline.reps,
+      note: `Baseado na sua ficha de anamnese (${baseline.load}kg x${baseline.reps}). Assim que você registrar uma sessão real, a sugestão passa a se basear nela.`,
+    }
   }
   const last = sessions[sessions.length - 1]
   let delta = 0

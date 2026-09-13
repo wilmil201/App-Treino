@@ -1,10 +1,13 @@
+import { useState } from 'react'
+import { useData } from '../context/DataContext'
+import { AnamneseForm } from './AnamneseForm'
 import { PrimaryButton } from './ui'
 
 const STEPS = [
   {
     icon: '📝',
     title: 'Registrar',
-    text: 'Escolha o dia (Segunda/Quarta/Sexta), logue cada série de cada exercício e finalize o treino no final. Tudo fica salvo automaticamente, sem precisar de internet.',
+    text: 'Escolha o treino do dia (você define os dias na aba Programa), logue cada série de cada exercício e finalize o treino no final. Tudo fica salvo automaticamente, sem precisar de internet.',
   },
   {
     icon: '📊',
@@ -19,11 +22,35 @@ const STEPS = [
   {
     icon: '⚙️',
     title: 'Programa',
-    text: 'Edite os exercícios de cada dia, marque os levantamentos principais e gerencie backup/exportação dos seus dados.',
+    text: 'Edite os exercícios de cada dia, defina quais dias da semana treina, marque os levantamentos principais e gerencie backup/exportação dos seus dados.',
   },
 ]
 
 export function OnboardingOverlay({ onDismiss }: { onDismiss: () => void }) {
+  const { program, schedule, anamnese, saveAnamnese } = useData()
+  const [phase, setPhase] = useState<'intro' | 'anamnese'>('intro')
+
+  if (phase === 'anamnese') {
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col overflow-y-auto bg-slate-950 px-5 pb-8 pt-[calc(env(safe-area-inset-top)+2rem)] safe-bottom">
+        <div className="mx-auto w-full max-w-md flex-1">
+          <p className="mb-1 text-center text-sm font-semibold uppercase tracking-wide text-emerald-400">Última etapa</p>
+          <h1 className="mb-6 text-center text-2xl font-bold text-slate-100">Ficha de anamnese</h1>
+          <AnamneseForm
+            program={program}
+            schedule={schedule}
+            anamnese={anamnese}
+            onSave={(a) => {
+              saveAnamnese(a)
+              onDismiss()
+            }}
+            onSkip={onDismiss}
+          />
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex flex-col overflow-y-auto bg-slate-950 px-5 pb-8 pt-[calc(env(safe-area-inset-top)+2rem)] safe-bottom">
       <div className="mx-auto w-full max-w-md flex-1">
@@ -50,7 +77,7 @@ export function OnboardingOverlay({ onDismiss }: { onDismiss: () => void }) {
       </div>
 
       <div className="mx-auto mt-6 w-full max-w-md">
-        <PrimaryButton onClick={onDismiss}>Começar</PrimaryButton>
+        <PrimaryButton onClick={() => setPhase('anamnese')}>Continuar</PrimaryButton>
       </div>
     </div>
   )

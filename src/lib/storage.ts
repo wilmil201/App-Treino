@@ -1,4 +1,4 @@
-import type { Program, Workout, JJSession } from './types'
+import type { Anamnese, Program, Workout, JJSession } from './types'
 import { buildDefaultProgram } from './defaultProgram'
 import { DEFAULT_SCHEDULE, type DaySchedule } from './schedule'
 
@@ -8,7 +8,10 @@ const KEYS = {
   jjSessions: 'treino:jjSessions',
   onboarded: 'treino:onboarded',
   schedule: 'treino:schedule',
+  anamnese: 'treino:anamnese',
 } as const
+
+const EMPTY_ANAMNESE: Anamnese = { mainLifts: {}, accessories: {} }
 
 function read<T>(key: string, fallback: T): T {
   try {
@@ -87,13 +90,27 @@ export const storage = {
   setSchedule(schedule: DaySchedule) {
     write(KEYS.schedule, schedule)
   },
+  getAnamnese(): Anamnese {
+    return read<Anamnese>(KEYS.anamnese, EMPTY_ANAMNESE)
+  },
+  setAnamnese(anamnese: Anamnese) {
+    write(KEYS.anamnese, anamnese)
+  },
   isOnboarded(): boolean {
     return read<boolean>(KEYS.onboarded, false)
   },
   setOnboarded() {
     write(KEYS.onboarded, true)
   },
-  exportAll(): { version: 1; exportedAt: string; program: Program; workouts: Workout[]; jjSessions: JJSession[]; schedule: DaySchedule } {
+  exportAll(): {
+    version: 1
+    exportedAt: string
+    program: Program
+    workouts: Workout[]
+    jjSessions: JJSession[]
+    schedule: DaySchedule
+    anamnese: Anamnese
+  } {
     return {
       version: 1,
       exportedAt: new Date().toISOString(),
@@ -101,12 +118,20 @@ export const storage = {
       workouts: this.getWorkouts(),
       jjSessions: this.getJJSessions(),
       schedule: this.getSchedule(),
+      anamnese: this.getAnamnese(),
     }
   },
-  importAll(data: { program?: Program; workouts?: Workout[]; jjSessions?: JJSession[]; schedule?: DaySchedule }) {
+  importAll(data: {
+    program?: Program
+    workouts?: Workout[]
+    jjSessions?: JJSession[]
+    schedule?: DaySchedule
+    anamnese?: Anamnese
+  }) {
     if (data.program) write(KEYS.program, migrateProgram(data.program as unknown as Record<string, unknown>))
     if (data.workouts) write(KEYS.workouts, migrateWorkouts(data.workouts))
     if (data.jjSessions) write(KEYS.jjSessions, data.jjSessions)
     if (data.schedule) write(KEYS.schedule, data.schedule)
+    if (data.anamnese) write(KEYS.anamnese, data.anamnese)
   },
 }

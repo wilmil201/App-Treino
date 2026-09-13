@@ -1,4 +1,4 @@
-import type { JJSession, Program, Workout } from './types'
+import type { Anamnese, JJSession, Program, Workout } from './types'
 import { storage } from './storage'
 import { todayISO, weekdayOfISO } from './dates'
 import { weekdayLabel } from './schedule'
@@ -25,6 +25,7 @@ export interface ImportedBackup {
   workouts?: Workout[]
   jjSessions?: JJSession[]
   schedule?: import('./schedule').DaySchedule
+  anamnese?: Anamnese
 }
 
 /** Valida minimamente o formato de um backup antes de sobrescrever os dados locais. */

@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react'
-import type { JJSession, Program, Workout } from '../lib/types'
+import type { Anamnese, JJSession, Program, Workout } from '../lib/types'
 import type { DaySchedule } from '../lib/schedule'
 import { storage } from '../lib/storage'
 
@@ -8,13 +8,21 @@ interface DataContextValue {
   workouts: Workout[]
   jjSessions: JJSession[]
   schedule: DaySchedule
+  anamnese: Anamnese
   saveProgram: (program: Program) => void
   resetProgram: () => void
   saveSchedule: (schedule: DaySchedule) => void
+  saveAnamnese: (anamnese: Anamnese) => void
   upsertWorkout: (workout: Workout) => void
   upsertJJSession: (session: JJSession) => void
   deleteJJSession: (id: string) => void
-  replaceAll: (data: { program?: Program; workouts?: Workout[]; jjSessions?: JJSession[]; schedule?: DaySchedule }) => void
+  replaceAll: (data: {
+    program?: Program
+    workouts?: Workout[]
+    jjSessions?: JJSession[]
+    schedule?: DaySchedule
+    anamnese?: Anamnese
+  }) => void
 }
 
 const DataContext = createContext<DataContextValue | null>(null)
@@ -24,6 +32,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [workouts, setWorkouts] = useState<Workout[]>(() => storage.getWorkouts())
   const [jjSessions, setJJSessions] = useState<JJSession[]>(() => storage.getJJSessions())
   const [schedule, setSchedule] = useState<DaySchedule>(() => storage.getSchedule())
+  const [anamnese, setAnamnese] = useState<Anamnese>(() => storage.getAnamnese())
 
   const saveProgram = useCallback((next: Program) => {
     setProgram(next)
@@ -38,6 +47,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const saveSchedule = useCallback((next: DaySchedule) => {
     setSchedule(next)
     storage.setSchedule(next)
+  }, [])
+
+  const saveAnamnese = useCallback((next: Anamnese) => {
+    setAnamnese(next)
+    storage.setAnamnese(next)
   }, [])
 
   const upsertWorkout = useCallback((workout: Workout) => {
@@ -67,12 +81,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const replaceAll = useCallback(
-    (data: { program?: Program; workouts?: Workout[]; jjSessions?: JJSession[]; schedule?: DaySchedule }) => {
+    (data: { program?: Program; workouts?: Workout[]; jjSessions?: JJSession[]; schedule?: DaySchedule; anamnese?: Anamnese }) => {
       storage.importAll(data)
       if (data.program) setProgram(storage.getProgram())
       if (data.workouts) setWorkouts(storage.getWorkouts())
       if (data.jjSessions) setJJSessions(data.jjSessions)
       if (data.schedule) setSchedule(data.schedule)
+      if (data.anamnese) setAnamnese(data.anamnese)
     },
     [],
   )
@@ -83,15 +98,31 @@ export function DataProvider({ children }: { children: ReactNode }) {
       workouts,
       jjSessions,
       schedule,
+      anamnese,
       saveProgram,
       resetProgram,
       saveSchedule,
+      saveAnamnese,
       upsertWorkout,
       upsertJJSession,
       deleteJJSession,
       replaceAll,
     }),
-    [program, workouts, jjSessions, schedule, saveProgram, resetProgram, saveSchedule, upsertWorkout, upsertJJSession, deleteJJSession, replaceAll],
+    [
+      program,
+      workouts,
+      jjSessions,
+      schedule,
+      anamnese,
+      saveProgram,
+      resetProgram,
+      saveSchedule,
+      saveAnamnese,
+      upsertWorkout,
+      upsertJJSession,
+      deleteJJSession,
+      replaceAll,
+    ],
   )
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>

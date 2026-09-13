@@ -8,15 +8,17 @@ import { Card, PrimaryButton, SecondaryButton, SectionTitle } from '../component
 import { ProgramExerciseRow } from '../components/ProgramExerciseRow'
 import { BackupSection } from '../components/BackupSection'
 import { WorkoutGeneratorWizard } from '../components/WorkoutGeneratorWizard'
+import { AnamneseForm } from '../components/AnamneseForm'
 
 const SLOT_TITLE: Record<Day, string> = { dia1: 'Treino 1', dia2: 'Treino 2', dia3: 'Treino 3' }
 
 export function ProgramaPage() {
-  const { program, schedule, saveProgram, saveSchedule, resetProgram } = useData()
+  const { program, schedule, anamnese, saveProgram, saveSchedule, saveAnamnese, resetProgram } = useData()
   const { showToast } = useToast()
   const [day, setDay] = useState<Day>('dia1')
   const [confirmReset, setConfirmReset] = useState(false)
   const [showWizard, setShowWizard] = useState(false)
+  const [showAnamnese, setShowAnamnese] = useState(false)
 
   const exercises = program[day]
 
@@ -69,6 +71,36 @@ export function ProgramaPage() {
 
       {showWizard && (
         <WorkoutGeneratorWizard schedule={schedule} onApply={handleApplyGenerated} onClose={() => setShowWizard(false)} />
+      )}
+
+      <Card className="mb-6 border-sky-700/60 bg-sky-500/5">
+        <p className="mb-1 font-semibold text-sky-300">Ficha de anamnese</p>
+        <p className="mb-3 text-xs text-slate-400">
+          Cargas de partida que você já consegue fazer hoje. O app usa isso para calcular a sugestão de carga desde o
+          primeiro treino registrado.
+        </p>
+        <SecondaryButton onClick={() => setShowAnamnese(true)}>📋 Editar ficha de anamnese</SecondaryButton>
+      </Card>
+
+      {showAnamnese && (
+        <div className="fixed inset-0 z-50 flex flex-col overflow-y-auto bg-slate-950 px-5 pb-8 pt-[calc(env(safe-area-inset-top)+1.5rem)] safe-bottom">
+          <div className="mx-auto w-full max-w-md flex-1">
+            <button type="button" onClick={() => setShowAnamnese(false)} className="mb-4 text-sm text-slate-400">
+              ← Voltar
+            </button>
+            <h1 className="mb-4 text-xl font-bold">Ficha de anamnese</h1>
+            <AnamneseForm
+              program={program}
+              schedule={schedule}
+              anamnese={anamnese}
+              onSave={(a) => {
+                saveAnamnese(a)
+                setShowAnamnese(false)
+                showToast('Ficha de anamnese salva')
+              }}
+            />
+          </div>
+        </div>
       )}
 
       <SectionTitle>Dias de treino</SectionTitle>
