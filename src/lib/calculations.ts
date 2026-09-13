@@ -1,4 +1,4 @@
-import type { LiftCategory, SetLog, Workout } from './types'
+import type { ExerciseFeedback, LiftCategory, SetLog, Workout } from './types'
 import { diffDays, startOfISOWeek, todayISO } from './dates'
 
 export function epley1RM(load: number, reps: number): number {
@@ -67,7 +67,18 @@ export function getLiftSessions(workouts: Workout[], category: LiftCategory): Li
   return points
 }
 
-export type AlertLevel = 'risco' | 'reduzir' | 'subir' | 'deload' | 'info'
+/** Feedback mais recente (completou/motivo) registrado para um levantamento principal,
+ * independente de ter séries registradas (pode ter sido pulado por completo). */
+export function getLastFeedbackForCategory(workouts: Workout[], category: LiftCategory): { date: string; feedback: ExerciseFeedback } | null {
+  const finished = [...workouts].filter((w) => w.finished).sort((a, b) => b.date.localeCompare(a.date))
+  for (const w of finished) {
+    const ex = w.exercises.find((e) => e.liftCategory === category)
+    if (ex?.feedback) return { date: w.date, feedback: ex.feedback }
+  }
+  return null
+}
+
+export type AlertLevel = 'risco' | 'reduzir' | 'subir' | 'deload' | 'info' | 'dor'
 
 export interface Alert {
   id: string
@@ -129,6 +140,33 @@ export function buildRegulationAlerts(workouts: Workout[]): Alert[] {
   const deload = checkDeloadNeeded(workouts)
   if (deload) alerts.push(deload)
 
+  alerts.push(...checkPainFeedback(workouts))
+
+  return alerts
+}
+
+/** Alerta para todo exercício (principal ou acessório) em que o atleta relatou dor
+ * como motivo de não ter completado, nos últimos 14 dias. */
+function checkPainFeedback(workouts: Workout[]): Alert[] {
+  const alerts: Alert[] = []
+  const recent = [...workouts]
+    .filter((w) => w.finished && diffDays(w.date, todayISO()) < 14)
+    .sort((a, b) => b.date.localeCompare(a.date))
+  const seen = new Set<string>()
+  for (const w of recent) {
+    for (const ex of w.exercises) {
+      if (ex.feedback?.motivo !== 'dor') continue
+      const key = ex.name.trim().toLowerCase()
+      if (seen.has(key)) continue
+      seen.add(key)
+      alerts.push({
+        id: `dor-${key}-${w.date}`,
+        level: 'dor',
+        title: `Dor relatada em ${ex.name}`,
+        message: `Em ${w.date} você relatou dor em ${ex.name}${ex.feedback?.observacao ? `: "${ex.feedback.observacao}"` : ''}. Considere trocar por um substituto ou procurar orientação profissional antes de repetir este exercício.`,
+      })
+    }
+  }
   return alerts
 }
 

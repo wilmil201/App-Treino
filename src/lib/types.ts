@@ -23,12 +23,23 @@ export interface SetLog {
   rpe: number
 }
 
+export type FeedbackMotivo = 'fadiga' | 'dor' | 'carga_pesada' | 'falta_tempo' | 'equipamento' | 'outro'
+
+/** Feedback do atleta ao finalizar um exercício — por que não completou o planejado,
+ * quando é o caso. Alimenta a sugestão de carga da próxima sessão e os alertas. */
+export interface ExerciseFeedback {
+  completou: boolean
+  motivo?: FeedbackMotivo
+  observacao?: string
+}
+
 export interface ExerciseLog {
   exerciseId: string
   name: string
   isMain: boolean
   liftCategory?: LiftCategory
   sets: SetLog[]
+  feedback?: ExerciseFeedback
 }
 
 export interface WorkoutSummary {

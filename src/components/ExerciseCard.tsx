@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { ExerciseLog, SetLog } from '../lib/types'
+import type { ExerciseFeedback, ExerciseLog, FeedbackMotivo, SetLog } from '../lib/types'
 import { generateId } from '../lib/id'
 import { youtubeSearchUrl } from '../lib/youtube'
 import { getBuiltInSubstitutes } from '../lib/substitutes'
@@ -20,7 +20,17 @@ interface Props {
   onUpdateSet: (setId: string, patch: Partial<SetLog>) => void
   onDeleteSet: (setId: string) => void
   onSwapExercise?: (newName: string) => void
+  onSaveFeedback?: (feedback: ExerciseFeedback) => void
 }
+
+const MOTIVOS: { key: FeedbackMotivo; label: string }[] = [
+  { key: 'fadiga', label: 'Fadiga/cansaço' },
+  { key: 'dor', label: 'Dor/desconforto' },
+  { key: 'carga_pesada', label: 'Carga muito pesada' },
+  { key: 'falta_tempo', label: 'Falta de tempo' },
+  { key: 'equipamento', label: 'Equipamento indisponível' },
+  { key: 'outro', label: 'Outro' },
+]
 
 function NumberField({
   value,
@@ -74,10 +84,15 @@ export function ExerciseCard({
   onUpdateSet,
   onDeleteSet,
   onSwapExercise,
+  onSaveFeedback,
 }: Props) {
   const [newSet, setNewSet] = useState({ load: '', reps: '', rpe: '' })
   const [resetKey, setResetKey] = useState(0)
   const [showSubstitutes, setShowSubstitutes] = useState(false)
+  const [feedbackOpen, setFeedbackOpen] = useState(false)
+  const [naoCompletouOpen, setNaoCompletouOpen] = useState(false)
+  const [motivoDraft, setMotivoDraft] = useState<FeedbackMotivo | null>(null)
+  const [obsDraft, setObsDraft] = useState('')
 
   const canAdd = newSet.load !== '' && newSet.reps !== '' && newSet.rpe !== ''
 
@@ -95,6 +110,26 @@ export function ExerciseCard({
     })
     setNewSet({ load: '', reps: '', rpe: '' })
     setResetKey((k) => k + 1)
+  }
+
+  function handleCompletou() {
+    onSaveFeedback?.({ completou: true })
+    setFeedbackOpen(false)
+    setNaoCompletouOpen(false)
+  }
+
+  function handleSalvarNaoCompletou() {
+    if (!motivoDraft) return
+    onSaveFeedback?.({ completou: false, motivo: motivoDraft, observacao: obsDraft.trim() || undefined })
+    setFeedbackOpen(false)
+    setNaoCompletouOpen(false)
+  }
+
+  function reabrirFeedback() {
+    setMotivoDraft(exercise.feedback?.motivo ?? null)
+    setObsDraft(exercise.feedback?.observacao ?? '')
+    setNaoCompletouOpen(exercise.feedback ? !exercise.feedback.completou : false)
+    setFeedbackOpen(true)
   }
 
   return (
@@ -263,6 +298,102 @@ export function ExerciseCard({
       >
         + Adicionar série
       </button>
+
+      {onSaveFeedback && (
+        <div className="border-t border-slate-800 pt-3">
+          {!feedbackOpen && exercise.feedback && (
+            <button
+              type="button"
+              onClick={reabrirFeedback}
+              className={`w-full rounded-lg border px-3 py-2 text-left text-xs ${
+                exercise.feedback.completou
+                  ? 'border-emerald-700/60 bg-emerald-500/10 text-emerald-300'
+                  : 'border-amber-700/60 bg-amber-500/10 text-amber-300'
+              }`}
+            >
+              {exercise.feedback.completou
+                ? '✓ Exercício finalizado — completou o planejado'
+                : `⚠ Exercício finalizado — não completou (${MOTIVOS.find((m) => m.key === exercise.feedback?.motivo)?.label ?? exercise.feedback.motivo})`}
+              <span className="ml-1 underline decoration-dotted">editar</span>
+            </button>
+          )}
+
+          {!feedbackOpen && !exercise.feedback && (
+            <button
+              type="button"
+              onClick={() => setFeedbackOpen(true)}
+              className="w-full rounded-lg border border-slate-700 bg-slate-900 py-2 text-sm font-semibold text-slate-300 active:bg-slate-800"
+            >
+              ✓ Finalizar exercício
+            </button>
+          )}
+
+          {feedbackOpen && (
+            <div className="space-y-2.5 rounded-lg border border-slate-700 bg-slate-900/60 p-3">
+              <p className="text-sm font-medium text-slate-200">Completou as séries planejadas?</p>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={handleCompletou}
+                  className="rounded-lg border border-emerald-600/60 bg-emerald-500/10 py-2 text-sm font-semibold text-emerald-300 active:bg-emerald-500/20"
+                >
+                  Sim
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setNaoCompletouOpen(true)}
+                  aria-pressed={naoCompletouOpen}
+                  className="rounded-lg border border-amber-600/60 bg-amber-500/10 py-2 text-sm font-semibold text-amber-300 active:bg-amber-500/20"
+                >
+                  Não
+                </button>
+              </div>
+
+              {naoCompletouOpen && (
+                <div className="space-y-2.5">
+                  <p className="text-xs text-slate-400">Por que não completou?</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {MOTIVOS.map((m) => (
+                      <button
+                        key={m.key}
+                        type="button"
+                        onClick={() => setMotivoDraft(m.key)}
+                        aria-pressed={motivoDraft === m.key}
+                        className={`rounded-full border px-2.5 py-1 text-xs font-medium ${
+                          motivoDraft === m.key
+                            ? 'border-amber-500 bg-amber-500/20 text-amber-200'
+                            : 'border-slate-700 bg-slate-900 text-slate-400'
+                        }`}
+                      >
+                        {m.label}
+                      </button>
+                    ))}
+                  </div>
+                  <textarea
+                    value={obsDraft}
+                    onChange={(e) => setObsDraft(e.target.value)}
+                    rows={2}
+                    placeholder="Observação (opcional)"
+                    className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 focus:border-emerald-500 focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    disabled={!motivoDraft}
+                    onClick={handleSalvarNaoCompletou}
+                    className="w-full rounded-lg border border-amber-600/60 bg-amber-500/10 py-2 text-sm font-semibold text-amber-300 active:bg-amber-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Salvar feedback
+                  </button>
+                </div>
+              )}
+
+              <button type="button" onClick={() => setFeedbackOpen(false)} className="w-full text-center text-xs text-slate-500">
+                cancelar
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </Card>
   )
 }

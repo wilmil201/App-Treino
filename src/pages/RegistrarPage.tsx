@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react'
 import { useData } from '../context/DataContext'
 import { useToast } from '../context/ToastContext'
-import type { Day, ExerciseLog, SetLog, Workout } from '../lib/types'
+import type { Day, ExerciseFeedback, ExerciseLog, SetLog, Workout } from '../lib/types'
 import { DAY_SLOTS, slotLabel } from '../lib/schedule'
 import { generateId } from '../lib/id'
 import { todayISO, todayWeekdayDay, getCicloOndulatorio, formatDateBR } from '../lib/dates'
 import { workoutVolume, epley1RM, getMaxE1RM } from '../lib/calculations'
 import { suggestMainLift, suggestAccessory } from '../lib/suggestions'
+import { suggestNextSessionTiming } from '../lib/recovery'
 import { LIFT_LABEL } from '../lib/liftLabels'
 import { Card, PrimaryButton } from '../components/ui'
 import { CycleBanner } from '../components/CycleBanner'
@@ -101,6 +102,11 @@ export function RegistrarPage() {
     commit({ ...workout, day, exercises }, `Exercício trocado para: ${newName}`)
   }
 
+  function handleSaveFeedback(exerciseId: string, feedback: ExerciseFeedback) {
+    const exercises = workout.exercises.map((ex) => (ex.exerciseId === exerciseId ? { ...ex, feedback } : ex))
+    commit({ ...workout, day, exercises }, feedback.completou ? 'Exercício finalizado' : 'Feedback registrado')
+  }
+
   function handleSaveDayInfo() {
     const parsedWeight = weightDraft === '' ? undefined : Number(weightDraft)
     commit({ ...workout, day, bodyWeight: parsedWeight, notes: notesDraft || undefined }, 'Peso corporal e observações salvos')
@@ -191,6 +197,16 @@ export function RegistrarPage() {
           <p className="text-sm text-emerald-200/90">
             {totalSets} séries, {formatVolume(totalVolume)}kg de volume total
           </p>
+          {(() => {
+            const rec = suggestNextSessionTiming(workout)
+            return (
+              <p className="mt-2 border-t border-emerald-700/40 pt-2 text-sm text-emerald-200/90">
+                📅 Próxima sessão recomendada: <span className="font-semibold">{rec.nextDateLabel}</span> ({rec.restDays} dias de descanso)
+                <br />
+                <span className="text-xs text-emerald-300/70">{rec.reason}</span>
+              </p>
+            )
+          })()}
         </div>
       )}
 
@@ -221,6 +237,7 @@ export function RegistrarPage() {
               onUpdateSet={(setId, patch) => handleUpdateSet(ex.exerciseId, setId, patch)}
               onDeleteSet={(setId) => handleDeleteSet(ex.exerciseId, setId)}
               onSwapExercise={(newName) => handleSwapExercise(ex.exerciseId, newName)}
+              onSaveFeedback={(feedback) => handleSaveFeedback(ex.exerciseId, feedback)}
             />
           )
         })}

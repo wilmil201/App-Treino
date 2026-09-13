@@ -1,4 +1,4 @@
-import type { Workout } from './types'
+import type { ExerciseFeedback, Workout } from './types'
 import { topSet, exerciseVolume, epley1RM } from './calculations'
 
 export interface ExerciseSessionPoint {
@@ -34,6 +34,18 @@ export function getExerciseSessions(workouts: Workout[], exerciseName: string): 
     })
   }
   return points
+}
+
+/** Feedback mais recente (completou/motivo) registrado para um exercício por nome,
+ * independente de ter séries registradas (pode ter sido pulado por completo). */
+export function getLastFeedbackForExercise(workouts: Workout[], exerciseName: string): { date: string; feedback: ExerciseFeedback } | null {
+  const target = norm(exerciseName)
+  const finished = [...workouts].filter((w) => w.finished).sort((a, b) => b.date.localeCompare(a.date))
+  for (const w of finished) {
+    const ex = w.exercises.find((e) => norm(e.name) === target)
+    if (ex?.feedback) return { date: w.date, feedback: ex.feedback }
+  }
+  return null
 }
 
 /** Lista de nomes de exercícios distintos já registrados (com pelo menos 1 série), mais recentes primeiro por uso. */

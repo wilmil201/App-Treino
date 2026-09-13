@@ -24,6 +24,7 @@ const LEVEL_STYLE: Record<Alert['level'], { border: string; bg: string; text: st
   subir: { border: 'border-emerald-600', bg: 'bg-emerald-500/10', text: 'text-emerald-300', icon: '↑' },
   deload: { border: 'border-purple-600', bg: 'bg-purple-500/10', text: 'text-purple-300', icon: '🔁' },
   info: { border: 'border-slate-600', bg: 'bg-slate-500/10', text: 'text-slate-300', icon: 'ℹ' },
+  dor: { border: 'border-rose-600', bg: 'bg-rose-500/10', text: 'text-rose-300', icon: '🩹' },
 }
 
 const ACWR_ZONE: Record<string, { label: string; color: string }> = {

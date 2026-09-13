@@ -1,11 +1,14 @@
 import type { LiftCategory, Workout } from './types'
 import type { CicloOndulatorio } from './dates'
-import { getLiftSessions } from './calculations'
-import { getExerciseSessions } from './exerciseHistory'
+import { getLastFeedbackForCategory, getLiftSessions } from './calculations'
+import { getExerciseSessions, getLastFeedbackForExercise } from './exerciseHistory'
 
 function round25(v: number): number {
   return Math.round(v / 2.5) * 2.5
 }
+
+/** Motivos de não-conclusão que indicam sobrecarga real (a carga/volume estava acima do que o corpo aguentava). */
+const OVERLOAD_MOTIVOS = new Set(['fadiga', 'carga_pesada'])
 
 export interface LiftSuggestion {
   category: LiftCategory
@@ -25,10 +28,13 @@ export interface LiftSuggestion {
  * estimativa teórica de 1RM extrapolada para outro número de reps — isso
  * podia gerar cargas que a pessoa nunca provou conseguir levantar). Os
  * ajustes são incrementos pequenos e diretamente justificados pelo
- * histórico de RPE das últimas sessões.
+ * histórico de RPE das últimas sessões — e pelo feedback que o atleta deu
+ * ao finalizar o exercício (se não completou o planejado por fadiga ou
+ * carga pesada, a sugestão nunca sobe).
  */
 export function suggestMainLift(category: LiftCategory, workouts: Workout[], ciclo: CicloOndulatorio): LiftSuggestion {
   const sessions = getLiftSessions(workouts, category)
+  const lastFeedback = getLastFeedbackForCategory(workouts, category)
 
   if (sessions.length === 0) {
     return {
@@ -77,6 +83,20 @@ export function suggestMainLift(category: LiftCategory, workouts: Workout[], cic
     note = 'Carga limitada: última sessão chegou à falha real (RPE 10). Priorize técnica antes de subir.'
   }
 
+  // O feedback do atleta manda mais do que a matemática do RPE: se ele disse
+  // que não completou por fadiga/carga pesada, a sugestão nunca sobe.
+  if (lastFeedback && lastFeedback.date === last.date && !lastFeedback.feedback.completou) {
+    if (OVERLOAD_MOTIVOS.has(lastFeedback.feedback.motivo ?? '')) {
+      suggestedLoad = Math.min(suggestedLoad, last.topSet.load)
+      note = `Você não completou todas as séries na última sessão (${last.topSet.load}kg) por ${
+        lastFeedback.feedback.motivo === 'fadiga' ? 'fadiga' : 'carga pesada'
+      }. Mantenha a mesma carga ou reduza antes de tentar subir de novo.`
+    } else if (lastFeedback.feedback.motivo === 'dor') {
+      suggestedLoad = Math.min(suggestedLoad, last.topSet.load)
+      note = `Você relatou dor na última sessão. Mantenha a carga e avalie trocar por um substituto — veja o alerta no Painel.`
+    }
+  }
+
   return { category, hasHistory: true, isDeload: false, suggestedLoad, reps: last.topSet.reps, note, basedOn }
 }
 
@@ -88,9 +108,12 @@ export interface AccessorySuggestion {
   basedOn?: { date: string; load: number; reps: number; rpe: number }
 }
 
-/** Progressão dupla simples: parte sempre da carga que o atleta realmente usou por último. */
+/** Progressão dupla simples: parte sempre da carga que o atleta realmente usou por último,
+ * e também respeita o feedback dado ao finalizar o exercício (não completou = não sobe). */
 export function suggestAccessory(exerciseName: string, workouts: Workout[]): AccessorySuggestion {
   const sessions = getExerciseSessions(workouts, exerciseName)
+  const lastFeedback = getLastFeedbackForExercise(workouts, exerciseName)
+
   if (sessions.length === 0) {
     return { hasHistory: false, suggestedLoad: null, note: 'Sem histórico ainda.' }
   }
@@ -107,6 +130,19 @@ export function suggestAccessory(exerciseName: string, workouts: Workout[]): Acc
     delta = 0
     note = `RPE dentro do alvo — mantenha a carga da última sessão (${last.load}kg x${last.reps}).`
   }
+
+  if (lastFeedback && lastFeedback.date === last.date && !lastFeedback.feedback.completou) {
+    if (OVERLOAD_MOTIVOS.has(lastFeedback.feedback.motivo ?? '')) {
+      delta = 0
+      note = `Você não completou as séries planejadas na última sessão (${
+        lastFeedback.feedback.motivo === 'fadiga' ? 'fadiga' : 'carga pesada'
+      }). Mantenha a mesma carga.`
+    } else if (lastFeedback.feedback.motivo === 'dor') {
+      delta = 0
+      note = 'Você relatou dor na última sessão. Mantenha a carga e avalie trocar por um substituto.'
+    }
+  }
+
   return {
     hasHistory: true,
     suggestedLoad: round25(last.load + delta),
