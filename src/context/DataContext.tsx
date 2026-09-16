@@ -11,6 +11,7 @@ interface DataContextValue {
   anamnese: Anamnese
   cycleStartForca: string | null
   cycleStartJiuJitsu: string | null
+  competitionDate: string | null
   saveProgram: (program: Program) => void
   resetProgram: () => void
   saveSchedule: (schedule: DaySchedule) => void
@@ -20,6 +21,7 @@ interface DataContextValue {
   deleteJJSession: (id: string) => void
   saveCycleStartForca: (iso: string | null) => void
   saveCycleStartJiuJitsu: (iso: string | null) => void
+  saveCompetitionDate: (iso: string | null) => void
   replaceAll: (data: {
     program?: Program
     workouts?: Workout[]
@@ -28,6 +30,7 @@ interface DataContextValue {
     anamnese?: Anamnese
     cycleStartForca?: string | null
     cycleStartJiuJitsu?: string | null
+    competitionDate?: string | null
   }) => void
 }
 
@@ -41,6 +44,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [anamnese, setAnamnese] = useState<Anamnese>(() => storage.getAnamnese())
   const [cycleStartForca, setCycleStartForca] = useState<string | null>(() => storage.getCycleStartForca())
   const [cycleStartJiuJitsu, setCycleStartJiuJitsu] = useState<string | null>(() => storage.getCycleStartJiuJitsu())
+  const [competitionDate, setCompetitionDate] = useState<string | null>(() => storage.getCompetitionDate())
 
   const saveProgram = useCallback((next: Program) => {
     setProgram(next)
@@ -98,6 +102,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
     storage.setCycleStartJiuJitsu(iso)
   }, [])
 
+  const saveCompetitionDate = useCallback((iso: string | null) => {
+    setCompetitionDate(iso)
+    storage.setCompetitionDate(iso)
+  }, [])
+
   const replaceAll = useCallback(
     (data: {
       program?: Program
@@ -107,6 +116,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       anamnese?: Anamnese
       cycleStartForca?: string | null
       cycleStartJiuJitsu?: string | null
+      competitionDate?: string | null
     }) => {
       storage.importAll(data)
       if (data.program) setProgram(storage.getProgram())
@@ -116,6 +126,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       if (data.anamnese) setAnamnese(data.anamnese)
       if (data.cycleStartForca !== undefined) setCycleStartForca(data.cycleStartForca)
       if (data.cycleStartJiuJitsu !== undefined) setCycleStartJiuJitsu(data.cycleStartJiuJitsu)
+      if (data.competitionDate !== undefined) setCompetitionDate(data.competitionDate)
     },
     [],
   )
@@ -129,6 +140,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       anamnese,
       cycleStartForca,
       cycleStartJiuJitsu,
+      competitionDate,
       saveProgram,
       resetProgram,
       saveSchedule,
@@ -138,6 +150,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       deleteJJSession,
       saveCycleStartForca,
       saveCycleStartJiuJitsu,
+      saveCompetitionDate,
       replaceAll,
     }),
     [
@@ -148,6 +161,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       anamnese,
       cycleStartForca,
       cycleStartJiuJitsu,
+      competitionDate,
       saveProgram,
       resetProgram,
       saveSchedule,
@@ -157,6 +171,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       deleteJJSession,
       saveCycleStartForca,
       saveCycleStartJiuJitsu,
+      saveCompetitionDate,
       replaceAll,
     ],
   )

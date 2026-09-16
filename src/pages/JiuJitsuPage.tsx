@@ -9,6 +9,8 @@ import { JJSessionForm } from '../components/JJSessionForm'
 import { WarmupChecklist } from '../components/WarmupChecklist'
 import { CoachTipsCard } from '../components/CoachTipsCard'
 import { TTBCalculator } from '../components/TTBCalculator'
+import { CompetitionPlanner } from '../components/CompetitionPlanner'
+import { buildCompetitionPlan, currentWeekPlan } from '../lib/competitionPlanner'
 import { MobilityRoutineSession } from '../components/MobilityRoutineSession'
 import { GroupedExerciseChecklist } from '../components/GroupedExerciseChecklist'
 import { ReferenceVideoList } from '../components/ReferenceVideoList'
@@ -31,7 +33,8 @@ const INTENSITY_LABEL: Record<string, string> = {
 }
 
 export function JiuJitsuPage() {
-  const { jjSessions, workouts, upsertJJSession, deleteJJSession, cycleStartJiuJitsu, saveCycleStartJiuJitsu } = useData()
+  const { jjSessions, workouts, upsertJJSession, deleteJJSession, cycleStartJiuJitsu, saveCycleStartJiuJitsu, competitionDate } =
+    useData()
   const { showToast } = useToast()
   const [showLibrary, setShowLibrary] = useState(false)
 
@@ -39,6 +42,9 @@ export function JiuJitsuPage() {
   const autoMacrocicloStart = jjSessions.length > 0 ? [...jjSessions].map((s) => s.date).sort()[0] : null
   const macrocicloStart = cycleStartJiuJitsu ?? autoMacrocicloStart
   const mesociclo = getMesociclo(macrocicloStart, today)
+
+  const competitionPlan = competitionDate ? buildCompetitionPlan(competitionDate, today) : null
+  const competitionWeek = currentWeekPlan(competitionPlan, today)
 
   const progression = checkProgressionReadiness(workouts, jjSessions, today)
 
@@ -56,8 +62,13 @@ export function JiuJitsuPage() {
       />
 
       <div className="mb-6">
+        <CompetitionPlanner />
+      </div>
+
+      <div className="mb-6">
         <JJSessionForm
           mesocicloIndex={mesociclo.index}
+          competitionWeek={competitionWeek}
           onSave={(session) => {
             upsertJJSession(session)
             showToast('Sessão de jiu-jitsu salva')

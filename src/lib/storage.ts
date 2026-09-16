@@ -11,6 +11,7 @@ const KEYS = {
   anamnese: 'treino:anamnese',
   cycleStartForca: 'treino:cycleStartForca',
   cycleStartJiuJitsu: 'treino:cycleStartJiuJitsu',
+  competitionDate: 'treino:competitionDate',
 } as const
 
 const EMPTY_ANAMNESE: Anamnese = { mainLifts: {}, accessories: {} }
@@ -118,6 +119,13 @@ export const storage = {
   setCycleStartJiuJitsu(iso: string | null) {
     write(KEYS.cycleStartJiuJitsu, iso)
   },
+  /** Data (ISO) da competição-alvo — null = nenhum macrociclo de competição ativo. */
+  getCompetitionDate(): string | null {
+    return read<string | null>(KEYS.competitionDate, null)
+  },
+  setCompetitionDate(iso: string | null) {
+    write(KEYS.competitionDate, iso)
+  },
   exportAll(): {
     version: 1
     exportedAt: string
@@ -128,6 +136,7 @@ export const storage = {
     anamnese: Anamnese
     cycleStartForca: string | null
     cycleStartJiuJitsu: string | null
+    competitionDate: string | null
   } {
     return {
       version: 1,
@@ -139,6 +148,7 @@ export const storage = {
       anamnese: this.getAnamnese(),
       cycleStartForca: this.getCycleStartForca(),
       cycleStartJiuJitsu: this.getCycleStartJiuJitsu(),
+      competitionDate: this.getCompetitionDate(),
     }
   },
   importAll(data: {
@@ -149,6 +159,7 @@ export const storage = {
     anamnese?: Anamnese
     cycleStartForca?: string | null
     cycleStartJiuJitsu?: string | null
+    competitionDate?: string | null
   }) {
     if (data.program) write(KEYS.program, migrateProgram(data.program as unknown as Record<string, unknown>))
     if (data.workouts) write(KEYS.workouts, migrateWorkouts(data.workouts))
@@ -157,5 +168,6 @@ export const storage = {
     if (data.anamnese) write(KEYS.anamnese, data.anamnese)
     if (data.cycleStartForca !== undefined) write(KEYS.cycleStartForca, data.cycleStartForca)
     if (data.cycleStartJiuJitsu !== undefined) write(KEYS.cycleStartJiuJitsu, data.cycleStartJiuJitsu)
+    if (data.competitionDate !== undefined) write(KEYS.competitionDate, data.competitionDate)
   },
 }

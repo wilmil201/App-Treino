@@ -28,6 +28,7 @@ export interface ImportedBackup {
   anamnese?: Anamnese
   cycleStartForca?: string | null
   cycleStartJiuJitsu?: string | null
+  competitionDate?: string | null
 }
 
 /** Valida minimamente o formato de um backup antes de sobrescrever os dados locais. */

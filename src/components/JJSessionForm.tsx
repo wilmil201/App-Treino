@@ -4,6 +4,7 @@ import { generateId } from '../lib/id'
 import { todayISO } from '../lib/dates'
 import { SESSION_PROTOCOLS } from '../lib/jjProtocols'
 import { ROLA_CATEGORIA_DESC, ROLA_CATEGORIA_LABEL, suggestRolaFocus } from '../lib/jjPlanning'
+import { PHASE_LABEL, type CompetitionWeekPlan } from '../lib/competitionPlanner'
 import { youtubeSearchUrl } from '../lib/youtube'
 import { Card, PrimaryButton } from './ui'
 
@@ -19,7 +20,15 @@ const INTENSITY_OPTIONS: { key: JJIntensity; label: string }[] = [
   { key: 'leve', label: 'Leve' },
 ]
 
-export function JJSessionForm({ mesocicloIndex, onSave }: { mesocicloIndex: number; onSave: (session: JJSession) => void }) {
+export function JJSessionForm({
+  mesocicloIndex,
+  competitionWeek,
+  onSave,
+}: {
+  mesocicloIndex: number
+  competitionWeek?: CompetitionWeekPlan | null
+  onSave: (session: JJSession) => void
+}) {
   const [date, setDate] = useState(todayISO())
   const [type, setType] = useState<JJSessionType>('sessao1')
   const [intensity, setIntensity] = useState<JJIntensity>('moderado')
@@ -32,12 +41,19 @@ export function JJSessionForm({ mesocicloIndex, onSave }: { mesocicloIndex: numb
 
   const isDrill = type === 'drill'
   const protocol = SESSION_PROTOCOLS[mesocicloIndex]
-  const focusSuggestion = !isDrill ? suggestRolaFocus(mesocicloIndex, type) : null
+  const focusSuggestion = isDrill
+    ? null
+    : competitionWeek
+      ? {
+          categoria: competitionWeek.enfase,
+          motivo: `Planejador de competição — semana de ${PHASE_LABEL[competitionWeek.phase]} (faltam ${competitionWeek.weeksToGo} semana${competitionWeek.weeksToGo === 1 ? '' : 's'}).`,
+        }
+      : suggestRolaFocus(mesocicloIndex, type)
 
   useEffect(() => {
     if (focusSuggestion) setCategoria(focusSuggestion.categoria)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [type, mesocicloIndex])
+  }, [type, mesocicloIndex, competitionWeek?.weekNumber])
 
   function reset() {
     setDuration('')
