@@ -1,8 +1,9 @@
-import type { Anamnese, AthleteProfile, LiftCategory, NivelExperiencia, ObjetivoTreino, Workout } from './types'
+import type { Anamnese, AthleteProfile, LiftCategory, ObjetivoTreino, Workout } from './types'
 import type { CicloOndulatorio } from './dates'
 import { getBestRecord, getLastFeedbackForCategory, getLiftSessions } from './calculations'
 import { getExerciseSessions, getLastFeedbackForExercise } from './exerciseHistory'
 import { estimateOneRepMax, loadForTarget } from './rpeChart'
+import { GUIDANCE_BY_OBJETIVO, REP_RANGE_BY_OBJETIVO, OBJETIVO_RPE_CENTER, OBJETIVO_LABEL, NIVEL_HINT, clamp } from './objetivoGuidance'
 
 function round25(v: number): number {
   return Math.round(v / 2.5) * 2.5
@@ -11,47 +12,10 @@ function round25(v: number): number {
 /** Motivos de não-conclusão que indicam sobrecarga real (a carga/volume estava acima do que o corpo aguentava). */
 const OVERLOAD_MOTIVOS = new Set(['fadiga', 'carga_pesada'])
 
-/**
- * Faixas de repetições/RPE/descanso por objetivo de treino — diretrizes padrão de
- * prescrição de força e condicionamento (linha NSCA/ACSM), não um valor inventado.
- * Servem só de orientação para a série de calibração; não determinam uma carga.
- */
-const GUIDANCE_BY_OBJETIVO: Record<ObjetivoTreino, { repRange: string; rpeRange: string; descanso: string }> = {
-  forca: { repRange: '3–6', rpeRange: '8–9', descanso: '3–5 min' },
-  hipertrofia: { repRange: '8–12', rpeRange: '7–9', descanso: '60–90s' },
-  resistencia: { repRange: '15–20', rpeRange: '6–8', descanso: '30–45s' },
-  emagrecimento: { repRange: '12–15', rpeRange: '6–8', descanso: '30–45s (priorize densidade de treino)' },
-  performance_esportiva: { repRange: '6–10', rpeRange: '7–8', descanso: '60–90s (priorize qualidade/velocidade do movimento)' },
-}
-
-/** Mesmas faixas de GUIDANCE_BY_OBJETIVO, em número — usadas pra de fato calcular a
- * progressão (reps-alvo, incremento de dupla progressão), não só exibir num texto. */
-const REP_RANGE_BY_OBJETIVO: Record<ObjetivoTreino, [number, number]> = {
-  forca: [3, 6],
-  hipertrofia: [8, 12],
-  resistencia: [15, 20],
-  emagrecimento: [12, 15],
-  performance_esportiva: [6, 10],
-}
-
-/** Centro da faixa de RPE de cada objetivo — usado como referência da onda ondulatória
- * de 4 semanas (em vez de uma única onda universal igual pra todo mundo). */
-const OBJETIVO_RPE_CENTER: Record<ObjetivoTreino, number> = {
-  forca: 8.5,
-  hipertrofia: 8,
-  resistencia: 7,
-  emagrecimento: 7,
-  performance_esportiva: 7.5,
-}
-
 /** Deslocamento da onda ondulatória de 4 semanas em relação ao centro de RPE do
  * objetivo — mesma forma de onda pra todo objetivo (acumulação leve → moderada →
  * intensificação → deload), só recentrada. */
 const WEEK_RPE_OFFSET: Record<1 | 2 | 3 | 4, number> = { 1: -1, 2: -0.25, 3: 0.25, 4: -2 }
-
-function clamp(v: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, v))
-}
 
 /** Reps-alvo real do atleta, puxado gentilmente pra dentro da faixa do objetivo quando
  * ele sai muito fora dela — nunca inventa um esquema, só evita ficar preso num número
@@ -61,20 +25,6 @@ function clampRepsToObjetivo(actualReps: number, objetivo: ObjetivoTreino | unde
   if (!objetivo) return actualReps
   const [min, max] = REP_RANGE_BY_OBJETIVO[objetivo]
   return clamp(actualReps, min, max)
-}
-
-const OBJETIVO_LABEL: Record<ObjetivoTreino, string> = {
-  forca: 'força',
-  hipertrofia: 'hipertrofia',
-  resistencia: 'resistência muscular / condicionamento',
-  emagrecimento: 'emagrecimento',
-  performance_esportiva: 'performance esportiva',
-}
-
-const NIVEL_HINT: Record<NivelExperiencia, string> = {
-  iniciante: 'comece com a menor carga disponível (barra vazia ou menor anilha)',
-  intermediario: 'comece com uma carga moderada, próxima da que usa em exercícios parecidos',
-  avancado: 'pode iniciar mais perto do que estima suportar, ajustando pela técnica',
 }
 
 /**

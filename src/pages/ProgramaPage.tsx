@@ -74,7 +74,12 @@ export function ProgramaPage() {
       </Card>
 
       {showWizard && (
-        <WorkoutGeneratorWizard schedule={schedule} onApply={handleApplyGenerated} onClose={() => setShowWizard(false)} />
+        <WorkoutGeneratorWizard
+          schedule={schedule}
+          anamnese={anamnese}
+          onApply={handleApplyGenerated}
+          onClose={() => setShowWizard(false)}
+        />
       )}
 
       <Card className="mb-6 border-sky-700/60 bg-sky-500/5">

@@ -1,24 +1,19 @@
 import { useState } from 'react'
-import type { Program } from '../lib/types'
+import type { Anamnese, NivelExperiencia, ObjetivoTreino, Program } from '../lib/types'
 import { DAY_SLOTS, slotLabel, type DaySchedule } from '../lib/schedule'
-import {
-  generateProgram,
-  SPLIT_LABEL,
-  type Nivel,
-  type Objetivo,
-  type Questionnaire,
-  type SplitKey,
-} from '../lib/workoutGenerator'
+import { generateProgram, SPLIT_LABEL, type Questionnaire, type SplitKey } from '../lib/workoutGenerator'
+import { GUIDANCE_BY_OBJETIVO, OBJETIVO_LABEL } from '../lib/objetivoGuidance'
 import type { Equipment, JointTag } from '../lib/exerciseLibrary'
 import { Card, PrimaryButton } from './ui'
 
-const OBJETIVOS: { key: Objetivo; label: string; desc: string }[] = [
-  { key: 'hipertrofia', label: 'Hipertrofia', desc: 'Ganho de massa muscular — séries de 8 a 12 repetições' },
-  { key: 'forca', label: 'Força', desc: 'Ganho de força máxima — séries mais pesadas, 5 a 8 repetições' },
-  { key: 'condicionamento', label: 'Condicionamento geral', desc: 'Resistência e saúde geral — séries mais longas, 15+ repetições' },
-]
+const OBJETIVOS: { key: ObjetivoTreino; label: string; desc: string }[] = (
+  Object.keys(OBJETIVO_LABEL) as ObjetivoTreino[]
+).map((key) => {
+  const g = GUIDANCE_BY_OBJETIVO[key]
+  return { key, label: OBJETIVO_LABEL[key][0].toUpperCase() + OBJETIVO_LABEL[key].slice(1), desc: `${g.repRange} reps, RPE ${g.rpeRange}, descanso ${g.descanso}` }
+})
 
-const NIVEIS: { key: Nivel; label: string }[] = [
+const NIVEIS: { key: NivelExperiencia; label: string }[] = [
   { key: 'iniciante', label: 'Iniciante' },
   { key: 'intermediario', label: 'Intermediário' },
   { key: 'avancado', label: 'Avançado' },
@@ -39,24 +34,27 @@ const LIMITACOES: { key: JointTag; label: string }[] = [
 
 const DIVISOES: SplitKey[] = ['perna_peito_costas', 'push_pull_legs', 'upper_lower']
 
-const STEPS = ['objetivo', 'nivel', 'equipamento', 'limitacoes', 'divisao', 'preview'] as const
+const STEPS = ['objetivo', 'nivel', 'equipamento', 'limitacoes', 'divisao', 'condicionamento', 'preview'] as const
 type Step = (typeof STEPS)[number]
 
 export function WorkoutGeneratorWizard({
   schedule,
+  anamnese,
   onApply,
   onClose,
 }: {
   schedule: DaySchedule
+  anamnese?: Anamnese
   onApply: (program: Program) => void
   onClose: () => void
 }) {
   const [stepIdx, setStepIdx] = useState(0)
-  const [objetivo, setObjetivo] = useState<Objetivo>('hipertrofia')
-  const [nivel, setNivel] = useState<Nivel>('intermediario')
+  const [objetivo, setObjetivo] = useState<ObjetivoTreino>(anamnese?.profile?.objetivo ?? 'hipertrofia')
+  const [nivel, setNivel] = useState<NivelExperiencia>(anamnese?.profile?.nivel ?? 'intermediario')
   const [equipamento, setEquipamento] = useState<Equipment>('academia')
   const [limitacoes, setLimitacoes] = useState<JointTag[]>([])
   const [divisao, setDivisao] = useState<SplitKey>('perna_peito_costas')
+  const [condicionamentoExtra, setCondicionamentoExtra] = useState(false)
 
   const step: Step = STEPS[stepIdx]
 
@@ -71,8 +69,8 @@ export function WorkoutGeneratorWizard({
     setLimitacoes((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]))
   }
 
-  const questionnaire: Questionnaire = { objetivo, nivel, equipamento, limitacoes, divisao }
-  const preview = step === 'preview' ? generateProgram(questionnaire) : null
+  const questionnaire: Questionnaire = { objetivo, nivel, equipamento, limitacoes, divisao, condicionamentoExtra }
+  const preview = step === 'preview' ? generateProgram(questionnaire, anamnese) : null
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col overflow-y-auto bg-slate-950 px-5 pb-8 pt-[calc(env(safe-area-inset-top)+1.5rem)] safe-bottom">
@@ -93,6 +91,9 @@ export function WorkoutGeneratorWizard({
         {step === 'objetivo' && (
           <div className="space-y-3">
             <p className="text-sm text-slate-400">Qual é o seu objetivo principal?</p>
+            {anamnese?.profile && (
+              <p className="text-xs text-sky-300">Pré-selecionado da sua ficha de anamnese — pode trocar se quiser.</p>
+            )}
             {OBJETIVOS.map((o) => (
               <button
                 key={o.key}
@@ -193,6 +194,36 @@ export function WorkoutGeneratorWizard({
           </div>
         )}
 
+        {step === 'condicionamento' && (
+          <div className="space-y-3">
+            <p className="text-sm text-slate-400">
+              Além do objetivo principal, quer incluir um bloco de condicionamento metabólico ao final de cada treino?
+              Útil pra quem quer força/hipertrofia <em>e</em> condicionamento geral juntos, não só um dos dois.
+            </p>
+            <button
+              type="button"
+              onClick={() => setCondicionamentoExtra(true)}
+              aria-pressed={condicionamentoExtra}
+              className={`w-full rounded-xl border p-3 text-left ${
+                condicionamentoExtra ? 'border-emerald-500 bg-emerald-500/15' : 'border-slate-700 bg-slate-900'
+              }`}
+            >
+              <p className="font-semibold text-slate-100">Sim, incluir finisher de condicionamento</p>
+              <p className="text-xs text-slate-400">Circuito ou intervalado de 8-10min ao final de cada um dos 3 treinos.</p>
+            </button>
+            <button
+              type="button"
+              onClick={() => setCondicionamentoExtra(false)}
+              aria-pressed={!condicionamentoExtra}
+              className={`w-full rounded-xl border p-3 text-left ${
+                !condicionamentoExtra ? 'border-emerald-500 bg-emerald-500/15' : 'border-slate-700 bg-slate-900'
+              }`}
+            >
+              <p className="font-semibold text-slate-100">Não, só o treino de força/hipertrofia</p>
+            </button>
+          </div>
+        )}
+
         {step === 'preview' && preview && (
           <div className="space-y-3">
             <p className="text-sm text-slate-400">Treino gerado — confira antes de aplicar:</p>
@@ -202,7 +233,7 @@ export function WorkoutGeneratorWizard({
                 <ul className="space-y-1">
                   {preview[day].map((ex) => (
                     <li key={ex.id} className="text-sm text-slate-300">
-                      {ex.isMain ? '⭐ ' : '· '}
+                      {ex.isMain ? '⭐ ' : ex.kind === 'aerobico' ? '🔥 ' : '· '}
                       {ex.name} <span className="text-slate-500">— {ex.detail}</span>
                     </li>
                   ))}
