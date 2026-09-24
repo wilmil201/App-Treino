@@ -9,7 +9,7 @@ import { workoutVolume, epley1RM, getMaxE1RM } from '../lib/calculations'
 import { suggestMainLift, suggestAccessory } from '../lib/suggestions'
 import { suggestNextSessionTiming } from '../lib/recovery'
 import { LIFT_LABEL } from '../lib/liftLabels'
-import { Card, PrimaryButton } from '../components/ui'
+import { Card, PrimaryButton, SectionTitle } from '../components/ui'
 import { CycleBanner } from '../components/CycleBanner'
 import { ExerciseCard, type ExerciseSuggestionView } from '../components/ExerciseCard'
 
@@ -56,6 +56,25 @@ export function RegistrarPage() {
 
   const totalSets = workout.exercises.reduce((sum, ex) => sum + ex.sets.length + (ex.cardioSets?.length ?? 0), 0)
   const totalVolume = workoutVolume(workout)
+
+  // Sugestão calculada 1x por exercício (a partir do histórico salvo) e reaproveitada
+  // tanto no resumo do topo quanto em cada card — é o mesmo cálculo, só exibido 2x.
+  const suggestionsByExerciseId = useMemo(() => {
+    const map = new Map<string, ExerciseSuggestionView | null>()
+    for (const ex of workout.exercises) {
+      if (ex.kind === 'aerobico') {
+        map.set(ex.exerciseId, null)
+      } else if (ex.liftCategory) {
+        const s = suggestMainLift(ex.liftCategory, workouts, ciclo, anamnese)
+        map.set(ex.exerciseId, s.hasHistory || s.isCalibration ? { suggestedLoad: s.suggestedLoad, reps: s.reps, note: s.note, isCalibration: s.isCalibration } : null)
+      } else {
+        const s = suggestAccessory(ex.name, workouts, anamnese)
+        map.set(ex.exerciseId, s.hasHistory || s.isCalibration ? { suggestedLoad: s.suggestedLoad, reps: s.reps, note: s.note, isCalibration: s.isCalibration } : null)
+      }
+    }
+    return map
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workout.exercises, workouts, ciclo, anamnese])
 
   function commit(updated: Workout, toastMessage?: string) {
     upsertWorkout(updated)
@@ -151,6 +170,32 @@ export function RegistrarPage() {
 
       <CycleBanner ciclo={ciclo} />
 
+      {!workout.finished && suggestionsByExerciseId.size > 0 && (
+        <div className="mb-4">
+          <SectionTitle>Ajustes calculados pra hoje</SectionTitle>
+          <Card className="border-sky-700/60 bg-sky-500/5">
+            <p className="mb-3 text-xs text-slate-400">
+              A partir do que você registrou na última sessão de cada exercício — sem precisar abrir um por um.
+            </p>
+            <ul className="space-y-2">
+              {workout.exercises
+                .filter((ex) => ex.kind !== 'aerobico' && suggestionsByExerciseId.get(ex.exerciseId))
+                .map((ex) => {
+                  const s = suggestionsByExerciseId.get(ex.exerciseId)!
+                  return (
+                    <li key={ex.exerciseId} className="flex items-center justify-between gap-3 text-sm">
+                      <span className="text-slate-300">{ex.name}</span>
+                      <span className={`shrink-0 font-semibold ${s.isCalibration ? 'text-amber-300' : 'text-sky-300'}`}>
+                        {s.isCalibration ? '🧭 calibração' : s.suggestedLoad !== null ? `${s.suggestedLoad}kg${s.reps ? ` x${s.reps}` : ''}` : '—'}
+                      </span>
+                    </li>
+                  )
+                })}
+            </ul>
+          </Card>
+        </div>
+      )}
+
       <div className="mb-4 grid grid-cols-3 gap-2">
         {DAY_SLOTS.map((d) => (
           <button
@@ -239,20 +284,7 @@ export function RegistrarPage() {
         {workout.exercises.map((ex) => {
           const programExercise = program[day].find((p) => p.id === ex.exerciseId)
           const detail = programExercise?.detail
-          let suggestion: ExerciseSuggestionView | null = null
-          if (ex.kind === 'aerobico') {
-            // exercícios aeróbicos usam duração/esforço, não carga — sem sugestão de carga aqui.
-          } else if (ex.liftCategory) {
-            const s = suggestMainLift(ex.liftCategory, workouts, ciclo, anamnese)
-            if (s.hasHistory || s.isCalibration) {
-              suggestion = { suggestedLoad: s.suggestedLoad, reps: s.reps, note: s.note, isCalibration: s.isCalibration }
-            }
-          } else {
-            const s = suggestAccessory(ex.name, workouts, anamnese)
-            if (s.hasHistory || s.isCalibration) {
-              suggestion = { suggestedLoad: s.suggestedLoad, reps: s.reps, note: s.note, isCalibration: s.isCalibration }
-            }
-          }
+          const suggestion = suggestionsByExerciseId.get(ex.exerciseId) ?? null
           return (
             <ExerciseCard
               key={ex.exerciseId}
