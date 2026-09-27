@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useMemo, useState, type ReactNo
 import type { Anamnese, JJSession, Program, Workout } from '../lib/types'
 import type { DaySchedule } from '../lib/schedule'
 import type { PeriodizacaoModel } from '../lib/periodization'
+import type { Hiit100Config } from '../lib/hiit100'
 import { storage } from '../lib/storage'
 
 interface DataContextValue {
@@ -15,6 +16,8 @@ interface DataContextValue {
   competitionDate: string | null
   periodizacaoModel: PeriodizacaoModel
   programUpdatedAt: string
+  hiit100Config: Hiit100Config | null
+  saveHiit100Config: (config: Hiit100Config | null) => void
   saveProgram: (program: Program) => void
   resetProgram: () => void
   saveSchedule: (schedule: DaySchedule) => void
@@ -37,6 +40,7 @@ interface DataContextValue {
     competitionDate?: string | null
     periodizacaoModel?: PeriodizacaoModel
     programUpdatedAt?: string
+    hiit100Config?: Hiit100Config | null
   }) => void
 }
 
@@ -53,6 +57,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [competitionDate, setCompetitionDate] = useState<string | null>(() => storage.getCompetitionDate())
   const [periodizacaoModel, setPeriodizacaoModel] = useState<PeriodizacaoModel>(() => storage.getPeriodizacaoModel())
   const [programUpdatedAt, setProgramUpdatedAt] = useState<string>(() => storage.getProgramUpdatedAt())
+  const [hiit100Config, setHiit100Config] = useState<Hiit100Config | null>(() => storage.getHiit100Config())
 
   const saveProgram = useCallback((next: Program) => {
     setProgram(next)
@@ -122,6 +127,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
     storage.setPeriodizacaoModel(model)
   }, [])
 
+  const saveHiit100Config = useCallback((config: Hiit100Config | null) => {
+    setHiit100Config(config)
+    storage.setHiit100Config(config)
+  }, [])
+
   const replaceAll = useCallback(
     (data: {
       program?: Program
@@ -134,6 +144,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       competitionDate?: string | null
       periodizacaoModel?: PeriodizacaoModel
       programUpdatedAt?: string
+      hiit100Config?: Hiit100Config | null
     }) => {
       storage.importAll(data)
       if (data.program) setProgram(storage.getProgram())
@@ -146,6 +157,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       if (data.competitionDate !== undefined) setCompetitionDate(data.competitionDate)
       if (data.periodizacaoModel !== undefined) setPeriodizacaoModel(data.periodizacaoModel)
       if (data.programUpdatedAt !== undefined) setProgramUpdatedAt(data.programUpdatedAt)
+      if (data.hiit100Config !== undefined) setHiit100Config(data.hiit100Config)
     },
     [],
   )
@@ -162,6 +174,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       competitionDate,
       periodizacaoModel,
       programUpdatedAt,
+      hiit100Config,
+      saveHiit100Config,
       saveProgram,
       resetProgram,
       saveSchedule,
@@ -186,6 +200,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       competitionDate,
       periodizacaoModel,
       programUpdatedAt,
+      hiit100Config,
+      saveHiit100Config,
       saveProgram,
       resetProgram,
       saveSchedule,

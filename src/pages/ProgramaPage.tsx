@@ -9,6 +9,7 @@ import { ProgramExerciseRow } from '../components/ProgramExerciseRow'
 import { BackupSection } from '../components/BackupSection'
 import { WorkoutGeneratorWizard } from '../components/WorkoutGeneratorWizard'
 import { AnamneseForm } from '../components/AnamneseForm'
+import { Hiit100Card } from '../components/Hiit100Card'
 import { UpdateChecker } from '../components/UpdateChecker'
 import { GroupedExerciseChecklist } from '../components/GroupedExerciseChecklist'
 import { GENERAL_MOBILITY_GROUPS, GENERAL_MOBILITY_SOURCE } from '../lib/generalMobility'
@@ -91,6 +92,8 @@ export function ProgramaPage() {
           )}
         </Card>
       )}
+
+      <Hiit100Card />
 
       <Card className="mb-6 border-emerald-700/60 bg-emerald-500/5">
         <p className="mb-1 font-semibold text-emerald-300">Não tem um treino pronto?</p>

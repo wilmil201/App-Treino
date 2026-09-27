@@ -12,6 +12,7 @@ import { checkJJOverlapForWorkout } from '../lib/motorIntegrado'
 import { LIFT_LABEL } from '../lib/liftLabels'
 import { Card, PrimaryButton, SectionTitle } from '../components/ui'
 import { CycleBanner } from '../components/CycleBanner'
+import { Hiit100WeekBanner } from '../components/Hiit100WeekBanner'
 import { ExerciseCard, type ExerciseSuggestionView } from '../components/ExerciseCard'
 
 function formatVolume(v: number): string {
@@ -181,6 +182,7 @@ export function RegistrarPage() {
       <h1 className="mb-4 text-xl font-bold">Registrar treino</h1>
 
       <CycleBanner ciclo={ciclo} />
+      <Hiit100WeekBanner />
 
       {jjOverlap && (
         <Card className="mb-4 border-amber-600 bg-amber-500/10">

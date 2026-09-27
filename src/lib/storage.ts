@@ -2,6 +2,7 @@ import type { Anamnese, Program, Workout, JJSession } from './types'
 import { buildDefaultProgram } from './defaultProgram'
 import { DEFAULT_SCHEDULE, type DaySchedule } from './schedule'
 import type { PeriodizacaoModel } from './periodization'
+import type { Hiit100Config } from './hiit100'
 import { todayISO } from './dates'
 
 const KEYS = {
@@ -16,6 +17,7 @@ const KEYS = {
   competitionDate: 'treino:competitionDate',
   periodizacaoModel: 'treino:periodizacaoModel',
   programUpdatedAt: 'treino:programUpdatedAt',
+  hiit100Config: 'treino:hiit100Config',
 } as const
 
 const EMPTY_ANAMNESE: Anamnese = { mainLifts: {}, accessories: {} }
@@ -150,6 +152,14 @@ export const storage = {
     write(KEYS.programUpdatedAt, now)
     return now
   },
+  /** Configuração ativa do protocolo HIIT de 100 (Stoppani) — null quando o atleta
+   * nunca configurou/aplicou esse programa específico. */
+  getHiit100Config(): Hiit100Config | null {
+    return read<Hiit100Config | null>(KEYS.hiit100Config, null)
+  },
+  setHiit100Config(config: Hiit100Config | null) {
+    write(KEYS.hiit100Config, config)
+  },
   exportAll(): {
     version: 1
     exportedAt: string
@@ -163,6 +173,7 @@ export const storage = {
     competitionDate: string | null
     periodizacaoModel: PeriodizacaoModel
     programUpdatedAt: string
+    hiit100Config: Hiit100Config | null
   } {
     return {
       version: 1,
@@ -177,6 +188,7 @@ export const storage = {
       competitionDate: this.getCompetitionDate(),
       periodizacaoModel: this.getPeriodizacaoModel(),
       programUpdatedAt: this.getProgramUpdatedAt(),
+      hiit100Config: this.getHiit100Config(),
     }
   },
   importAll(data: {
@@ -190,6 +202,7 @@ export const storage = {
     competitionDate?: string | null
     periodizacaoModel?: PeriodizacaoModel
     programUpdatedAt?: string
+    hiit100Config?: Hiit100Config | null
   }) {
     if (data.program) write(KEYS.program, migrateProgram(data.program as unknown as Record<string, unknown>))
     if (data.workouts) write(KEYS.workouts, migrateWorkouts(data.workouts))
@@ -201,5 +214,6 @@ export const storage = {
     if (data.competitionDate !== undefined) write(KEYS.competitionDate, data.competitionDate)
     if (data.periodizacaoModel !== undefined) write(KEYS.periodizacaoModel, data.periodizacaoModel)
     if (data.programUpdatedAt !== undefined) write(KEYS.programUpdatedAt, data.programUpdatedAt)
+    if (data.hiit100Config !== undefined) write(KEYS.hiit100Config, data.hiit100Config)
   },
 }
