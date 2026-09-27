@@ -27,7 +27,7 @@ const STEPS = [
 ]
 
 export function OnboardingOverlay({ onDismiss }: { onDismiss: () => void }) {
-  const { program, schedule, anamnese, saveAnamnese } = useData()
+  const { program, schedule, anamnese, saveAnamnese, saveProgram } = useData()
   const [phase, setPhase] = useState<'intro' | 'anamnese'>('intro')
 
   if (phase === 'anamnese') {
@@ -40,10 +40,9 @@ export function OnboardingOverlay({ onDismiss }: { onDismiss: () => void }) {
             program={program}
             schedule={schedule}
             anamnese={anamnese}
-            onSave={(a) => {
-              saveAnamnese(a)
-              onDismiss()
-            }}
+            onSave={(a) => saveAnamnese(a)}
+            onApplyProgram={(generated) => saveProgram(generated)}
+            onFinish={onDismiss}
             onSkip={onDismiss}
           />
         </div>

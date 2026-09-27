@@ -1,4 +1,4 @@
-import type { Anamnese, AthleteProfile, LiftCategory, ObjetivoTreino, Workout } from './types'
+import type { Anamnese, AthleteProfile, LiftCategory, NivelExperiencia, ObjetivoTreino, Workout } from './types'
 import type { CicloOndulatorio } from './dates'
 import { getBestRecord, getLastFeedbackForCategory, getLiftSessions } from './calculations'
 import { getExerciseSessions, getLastFeedbackForExercise } from './exerciseHistory'
@@ -9,6 +9,19 @@ import { RPE_OFFSET_BY_MODEL, type PeriodizacaoModel } from './periodization'
 function round25(v: number): number {
   return Math.round(v / 2.5) * 2.5
 }
+
+function roundToStep(v: number, step: number): number {
+  return Math.round(v / step) * step
+}
+
+/** "Ganhos de novato" (Stoppani): iniciante tolera saltos de carga maiores e mais
+ * frequentes porque a adaptação neural inicial é rápida; avançado precisa de
+ * manipulação fina, com incrementos pequenos, pra continuar progredindo sem
+ * estagnar ou lesionar. Hoje isso só existia como texto de calibração — não mexia
+ * em nenhum número. Estes valores passam a ser o incremento real de progressão. */
+const NIVEL_MAIN_LIFT_INCREMENT_KG: Record<NivelExperiencia, number> = { iniciante: 5, intermediario: 2.5, avancado: 1.25 }
+const NIVEL_MAIN_LIFT_STEP: Record<NivelExperiencia, number> = { iniciante: 2.5, intermediario: 2.5, avancado: 1.25 }
+const NIVEL_ACCESSORY_MULT: Record<NivelExperiencia, number> = { iniciante: 1.4, intermediario: 1, avancado: 0.7 }
 
 /** Motivos de não-conclusão que indicam sobrecarga real (a carga/volume estava acima do que o corpo aguentava). */
 const OVERLOAD_MOTIVOS = new Set(['fadiga', 'carga_pesada'])
@@ -186,8 +199,10 @@ export function suggestMainLift(category: LiftCategory, workouts: Workout[], cic
     // Sessão limpa (sem sinal de sobrecarga/dor/falha) mas a fórmula sugeriria repetir
     // ou cair a carga — aplica um piso mínimo de progressão. Sessão limpa sempre anda
     // pra frente; é isso que evita a sugestão ficar "replicando" o treino anterior.
-    suggestedLoad = round25(last.topSet.load + 2.5)
-    note = `${oneRepMaxSource}. Sessão anterior limpa (sem sobrecarga, sem dor) — aplicando progressão mínima sobre os ${last.topSet.load}kg da última vez.`
+    // O tamanho do salto depende do nível (ganhos de novato x avançado, Stoppani).
+    const nivel = anamnese?.profile?.nivel ?? 'intermediario'
+    suggestedLoad = roundToStep(last.topSet.load + NIVEL_MAIN_LIFT_INCREMENT_KG[nivel], NIVEL_MAIN_LIFT_STEP[nivel])
+    note = `${oneRepMaxSource}. Sessão anterior limpa (sem sobrecarga, sem dor) — aplicando progressão mínima de nível ${nivel} sobre os ${last.topSet.load}kg da última vez.`
   }
 
   return { category, hasHistory: true, isDeload: false, suggestedLoad, reps: targetReps, descanso, note, basedOn }
@@ -221,10 +236,13 @@ const DEFAULT_ACCESSORY_DESCANSO = GUIDANCE_BY_OBJETIVO.hipertrofia.descanso
 function progressAccessory(
   last: { load: number; reps: number; rpe: number },
   objetivo: ObjetivoTreino | undefined,
+  nivel: NivelExperiencia,
 ): { load: number; reps: number; note: string } {
   const [min, max] = objetivo ? REP_RANGE_BY_OBJETIVO[objetivo] : DEFAULT_ACCESSORY_RANGE
   const rpeCenter = objetivo ? OBJETIVO_RPE_CENTER[objetivo] : DEFAULT_ACCESSORY_RPE_CENTER
-  const increment = last.load >= 40 ? 2.5 : 1.25
+  const baseIncrement = last.load >= 40 ? 2.5 : 1.25
+  // Nível modula o tamanho do salto (ganhos de novato x avançado, Stoppani).
+  const increment = roundToStep(baseIncrement * NIVEL_ACCESSORY_MULT[nivel], 1.25) || 1.25
 
   if (last.rpe > rpeCenter + 1.5) {
     return {
@@ -301,6 +319,6 @@ export function suggestAccessory(exerciseName: string, workouts: Workout[], anam
     }
   }
 
-  const progression = progressAccessory(last, objetivo)
+  const progression = progressAccessory(last, objetivo, anamnese?.profile?.nivel ?? 'intermediario')
   return { hasHistory: true, suggestedLoad: progression.load, reps: progression.reps, descanso, note: progression.note, basedOn }
 }

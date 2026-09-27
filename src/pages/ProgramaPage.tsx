@@ -131,9 +131,13 @@ export function ProgramaPage() {
               anamnese={anamnese}
               onSave={(a) => {
                 saveAnamnese(a)
-                setShowAnamnese(false)
                 showToast('Ficha de anamnese salva')
               }}
+              onApplyProgram={(generated) => {
+                saveProgram(generated)
+                showToast('Treino gerado a partir da sua anamnese aplicado')
+              }}
+              onFinish={() => setShowAnamnese(false)}
             />
           </div>
         </div>

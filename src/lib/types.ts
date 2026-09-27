@@ -78,7 +78,7 @@ export interface AnamneseBaseline {
   reps: number
 }
 
-export type ObjetivoTreino = 'forca' | 'hipertrofia' | 'resistencia' | 'emagrecimento' | 'performance_esportiva'
+export type ObjetivoTreino = 'forca' | 'hipertrofia' | 'resistencia' | 'emagrecimento' | 'performance_esportiva' | 'potencia'
 export type NivelExperiencia = 'iniciante' | 'intermediario' | 'avancado'
 
 /** Bloco B da anamnese — qual "motor" de decisão rege a experiência do atleta:

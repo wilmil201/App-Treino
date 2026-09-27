@@ -13,10 +13,12 @@ import type {
   Sexo,
   TempoPratica,
 } from '../lib/types'
-import type { Equipment, MuscleGroup } from '../lib/exerciseLibrary'
+import type { Equipment, JointTag, MuscleGroup } from '../lib/exerciseLibrary'
 import { DAY_SLOTS, slotLabel, type DaySchedule } from '../lib/schedule'
 import { LIFT_LABEL } from '../lib/liftLabels'
 import { buildRecommendation } from '../lib/profileRecommendation'
+import { generateProgram, type Questionnaire } from '../lib/workoutGenerator'
+import { OBJETIVO_LABEL } from '../lib/objetivoGuidance'
 import { Card, PrimaryButton, SecondaryButton } from './ui'
 
 function norm(name: string): string {
@@ -35,6 +37,7 @@ const OBJETIVO_OPTIONS: { key: ObjetivoTreino; label: string; desc: string }[] =
   { key: 'resistencia', label: 'Resistência / condicionamento', desc: 'Capacidade de repetir esforço' },
   { key: 'emagrecimento', label: 'Emagrecimento', desc: 'Perda de gordura' },
   { key: 'performance_esportiva', label: 'Performance esportiva', desc: 'Transferência para o esporte praticado' },
+  { key: 'potencia', label: 'Potência', desc: 'Velocidade e explosão do movimento (cargas submáximas, poucas reps)' },
 ]
 
 const NIVEL_OPTIONS: { key: NivelExperiencia; label: string }[] = [
@@ -112,17 +115,32 @@ export function AnamneseForm({
   schedule,
   anamnese,
   onSave,
+  onApplyProgram,
+  onFinish,
   onSkip,
 }: {
   program: Program
   schedule: DaySchedule
   anamnese: Anamnese
+  /** Persiste a ficha de anamnese. Não fecha a tela sozinho — quando o motor inclui
+   * musculação, a tela ainda mostra o treino gerado a partir dela antes de fechar. */
   onSave: (a: Anamnese) => void
+  /** Aplica o treino gerado automaticamente a partir da anamnese recém-salva. Sem
+   * essa prop, a tela pula direto pra onFinish() depois de salvar (comportamento
+   * de quando o motor não inclui musculação). */
+  onApplyProgram?: (program: Program) => void
+  /** Fecha a tela de anamnese — chamado depois de salvar (e, se aplicável, depois
+   * que o atleta decidir sobre o treino gerado) ou ao pular. */
+  onFinish: () => void
   onSkip?: () => void
 }) {
   const p = anamnese.profile
   const [draft, setDraft] = useState<Draft>(() => buildInitialDraft(program, anamnese))
   const [expandedDays, setExpandedDays] = useState<Record<string, boolean>>({})
+  /** Treino gerado a partir da anamnese recém-salva, aguardando decisão do atleta
+   * (aplicar ou manter o atual) — é isso que faz a anamnese realmente "analisar e
+   * escolher" um treino, em vez de só mostrar uma recomendação em texto. */
+  const [resultProgram, setResultProgram] = useState<Program | null>(null)
 
   // Bloco B
   const [motorPrincipal, setMotorPrincipal] = useState<MotorPrincipal>(p?.motorPrincipal ?? 'combinacao')
@@ -219,6 +237,66 @@ export function AnamneseForm({
       }
     }
     onSave(next)
+
+    if (includesMusculacao && onApplyProgram) {
+      const lesoesToJointTag: JointTag[] = (profile.lesoes ?? [])
+        .map((a): JointTag | null => (a === 'coluna' ? 'lombar' : a === 'ombro' || a === 'joelho' || a === 'punho' ? a : null))
+        .filter((t): t is JointTag => t !== null)
+      const questionnaire: Questionnaire = {
+        objetivo,
+        nivel,
+        equipamento: equipamentoDisponivel || 'academia',
+        limitacoes: lesoesToJointTag,
+        divisao: 'perna_peito_costas',
+        condicionamentoExtra: false,
+      }
+      setResultProgram(generateProgram(questionnaire, next))
+    } else {
+      onFinish()
+    }
+  }
+
+  if (resultProgram) {
+    return (
+      <div className="space-y-4">
+        <Card className="space-y-2 border-emerald-700/60 bg-emerald-500/5">
+          <p className="font-semibold text-emerald-300">Ficha salva — treino gerado a partir dela</p>
+          <p className="text-xs text-slate-400">
+            Analisando objetivo ({OBJETIVO_LABEL[objetivo]}), nível ({NIVEL_OPTIONS.find((n) => n.key === nivel)?.label}), equipamento
+            disponível{lesoes.length > 0 ? ', limitações marcadas' : ''}
+            {gruposPrioritarios.length > 0 ? ' e grupos prioritários' : ''}, este é o treino que combina com o seu caso — não o
+            genérico de antes.
+          </p>
+        </Card>
+        {DAY_SLOTS.map((day) => (
+          <Card key={day}>
+            <p className="mb-2 font-semibold text-emerald-400">{slotLabel(schedule, day)}</p>
+            <ul className="space-y-1">
+              {resultProgram[day].map((ex) => (
+                <li key={ex.id} className="text-sm text-slate-300">
+                  {ex.isMain ? '⭐ ' : ex.kind === 'aerobico' ? '🔥 ' : '· '}
+                  {ex.name} <span className="text-slate-500">— {ex.detail}</span>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        ))}
+        <p className="text-xs text-amber-300/90">
+          Aplicar substitui todo o programa atual pelo gerado acima. Seus treinos já registrados não são afetados.
+        </p>
+        <div className="space-y-2">
+          <PrimaryButton
+            onClick={() => {
+              onApplyProgram?.(resultProgram)
+              onFinish()
+            }}
+          >
+            Aplicar este treino agora
+          </PrimaryButton>
+          <SecondaryButton onClick={onFinish}>Manter meu treino atual por enquanto</SecondaryButton>
+        </div>
+      </div>
+    )
   }
 
   return (

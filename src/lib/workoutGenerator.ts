@@ -121,11 +121,16 @@ export function generateProgram(q: Questionnaire, anamnese?: Anamnese): Program 
   const accessorySets = ACCESSORY_SETS_BY_OBJETIVO[q.objetivo]
   const mainRepRange = REP_RANGE_BY_OBJETIVO[q.objetivo]
   const usedNames = new Set<string>()
+  /** Grupos musculares que o atleta marcou como prioritários na anamnese (Bloco D) —
+   * entram na rotação de seleção de acessórios com peso dobrado, pra realmente
+   * receberem mais volume/atenção em vez de só serem um dado guardado sem uso. */
+  const prioritized = new Set(anamnese?.profile?.gruposPrioritarios ?? [])
 
   const program = {} as Program
 
   for (const day of DAY_SLOTS) {
     const groups = groupsByDay[day]
+    const groupRotation = groups.flatMap((g) => (prioritized.has(g) ? [g, g] : [g]))
     const pool = EXERCISE_LIBRARY.filter(
       (ex) => groups.includes(ex.group) && usable(ex.equipment, q.equipamento) && !conflicts(ex.avoid, q.limitacoes) && !usedNames.has(ex.name),
     )
@@ -159,7 +164,7 @@ export function generateProgram(q: Questionnaire, anamnese?: Anamnese): Program 
     const targetCount = accessoryCount + (mainCandidate ? 2 : 0)
     while (exercises.length < targetCount && guard < 200) {
       guard++
-      const group = groups[groupIdx % groups.length]
+      const group = groupRotation[groupIdx % groupRotation.length]
       groupIdx++
       const candidate = pickCandidate(remainingPool, group, usedNames, q.objetivo)
       if (candidate) {

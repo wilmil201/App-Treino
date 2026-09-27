@@ -12,6 +12,7 @@ export const GUIDANCE_BY_OBJETIVO: Record<ObjetivoTreino, { repRange: string; rp
   resistencia: { repRange: '15–20', rpeRange: '6–8', descanso: '30–45s' },
   emagrecimento: { repRange: '12–15', rpeRange: '6–8', descanso: '30–45s (priorize densidade de treino)' },
   performance_esportiva: { repRange: '6–10', rpeRange: '7–8', descanso: '60–90s (priorize qualidade/velocidade do movimento)' },
+  potencia: { repRange: '1–5', rpeRange: '6–8', descanso: '2–5 min' },
 }
 
 /** Mesmas faixas de GUIDANCE_BY_OBJETIVO, em número — usadas pra de fato calcular
@@ -22,6 +23,7 @@ export const REP_RANGE_BY_OBJETIVO: Record<ObjetivoTreino, [number, number]> = {
   resistencia: [15, 20],
   emagrecimento: [12, 15],
   performance_esportiva: [6, 10],
+  potencia: [1, 5],
 }
 
 /** Centro da faixa de RPE de cada objetivo — usado como referência da onda ondulatória
@@ -32,6 +34,7 @@ export const OBJETIVO_RPE_CENTER: Record<ObjetivoTreino, number> = {
   resistencia: 7,
   emagrecimento: 7,
   performance_esportiva: 7.5,
+  potencia: 7,
 }
 
 /** Nº de séries do levantamento principal por objetivo — mais séries e menos reps pra
@@ -43,6 +46,7 @@ export const MAIN_SETS_BY_OBJETIVO: Record<ObjetivoTreino, number> = {
   resistencia: 3,
   emagrecimento: 3,
   performance_esportiva: 4,
+  potencia: 4,
 }
 
 /** Nº de séries de acessório por objetivo. */
@@ -52,6 +56,7 @@ export const ACCESSORY_SETS_BY_OBJETIVO: Record<ObjetivoTreino, number> = {
   resistencia: 3,
   emagrecimento: 3,
   performance_esportiva: 3,
+  potencia: 3,
 }
 
 export const OBJETIVO_LABEL: Record<ObjetivoTreino, string> = {
@@ -60,6 +65,7 @@ export const OBJETIVO_LABEL: Record<ObjetivoTreino, string> = {
   resistencia: 'resistência muscular / condicionamento',
   emagrecimento: 'emagrecimento',
   performance_esportiva: 'performance esportiva',
+  potencia: 'potência',
 }
 
 export const NIVEL_HINT: Record<NivelExperiencia, string> = {
