@@ -48,13 +48,20 @@ export function WorkoutGeneratorWizard({
   onApply: (program: Program) => void
   onClose: () => void
 }) {
+  const profile = anamnese?.profile
+  const lesoesToJointTag: JointTag[] = (profile?.lesoes ?? [])
+    .map((a): JointTag | null => (a === 'coluna' ? 'lombar' : a === 'ombro' || a === 'joelho' || a === 'punho' ? a : null))
+    .filter((t): t is JointTag => t !== null)
+
   const [stepIdx, setStepIdx] = useState(0)
-  const [objetivo, setObjetivo] = useState<ObjetivoTreino>(anamnese?.profile?.objetivo ?? 'hipertrofia')
-  const [nivel, setNivel] = useState<NivelExperiencia>(anamnese?.profile?.nivel ?? 'intermediario')
-  const [equipamento, setEquipamento] = useState<Equipment>('academia')
-  const [limitacoes, setLimitacoes] = useState<JointTag[]>([])
+  const [objetivo, setObjetivo] = useState<ObjetivoTreino>(profile?.objetivo ?? 'hipertrofia')
+  const [nivel, setNivel] = useState<NivelExperiencia>(profile?.nivel ?? 'intermediario')
+  const [equipamento, setEquipamento] = useState<Equipment>(profile?.equipamentoDisponivel ?? 'academia')
+  const [limitacoes, setLimitacoes] = useState<JointTag[]>(lesoesToJointTag)
   const [divisao, setDivisao] = useState<SplitKey>('perna_peito_costas')
   const [condicionamentoExtra, setCondicionamentoExtra] = useState(false)
+
+  const diasDisponiveis = profile?.diasDisponiveisSemana
 
   const step: Step = STEPS[stepIdx]
 
@@ -227,6 +234,15 @@ export function WorkoutGeneratorWizard({
         {step === 'preview' && preview && (
           <div className="space-y-3">
             <p className="text-sm text-slate-400">Treino gerado — confira antes de aplicar:</p>
+            {diasDisponiveis && diasDisponiveis !== 3 && (
+              <Card className="border-sky-700/60 bg-sky-500/5">
+                <p className="text-xs text-sky-200/90">
+                  {diasDisponiveis > 3
+                    ? `Você tem ${diasDisponiveis} dias disponíveis — o app monta sempre 3 treinos (T1/T2/T3), mas com esse tempo dá pra repetir o ciclo mais de uma vez por semana (ex.: T1, T2, T3, T1, T2...) em vez de treinar cada um só 1x.`
+                    : `Você tem só ${diasDisponiveis} dias disponíveis — considere revezar quais dos 3 treinos faz em cada semana, priorizando os levantamentos principais, em vez de tentar encaixar os 3 nesse espaço.`}
+                </p>
+              </Card>
+            )}
             {DAY_SLOTS.map((day) => (
               <Card key={day}>
                 <p className="mb-2 font-semibold text-emerald-400">{slotLabel(schedule, day)}</p>

@@ -18,6 +18,7 @@ import { MOBILITY_GROUPS } from '../lib/mobility'
 import { SOLO_DRILL_GROUPS } from '../lib/soloDrills'
 import { GENERAL_REFERENCE_VIDEOS } from '../lib/referenceVideos'
 import { ROLA_CATEGORIA_LABEL } from '../lib/jjPlanning'
+import { checkWorkoutOverlapForJJ } from '../lib/motorIntegrado'
 import type { JJSession } from '../lib/types'
 
 const TYPE_LABEL: Record<JJSession['type'], string> = {
@@ -39,6 +40,7 @@ export function JiuJitsuPage() {
   const [showLibrary, setShowLibrary] = useState(false)
 
   const today = todayISO()
+  const workoutOverlap = checkWorkoutOverlapForJJ(workouts, today)
   const autoMacrocicloStart = jjSessions.length > 0 ? [...jjSessions].map((s) => s.date).sort()[0] : null
   const macrocicloStart = cycleStartJiuJitsu ?? autoMacrocicloStart
   const mesociclo = getMesociclo(macrocicloStart, today)
@@ -60,6 +62,13 @@ export function JiuJitsuPage() {
         autoCycleStart={autoMacrocicloStart}
         onChangeCycleStart={saveCycleStartJiuJitsu}
       />
+
+      {workoutOverlap && (
+        <Card className="mb-4 border-amber-600 bg-amber-500/10">
+          <p className="text-sm font-semibold text-amber-300">⚠ Motor integrado</p>
+          <p className="mt-1 text-xs text-amber-200/90">{workoutOverlap.message}</p>
+        </Card>
+      )}
 
       <div className="mb-6">
         <CompetitionPlanner />

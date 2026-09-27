@@ -8,6 +8,7 @@ import { todayISO, todayWeekdayDay, getCicloOndulatorio, formatDateBR } from '..
 import { workoutVolume, epley1RM, getMaxE1RM } from '../lib/calculations'
 import { suggestMainLift, suggestAccessory } from '../lib/suggestions'
 import { suggestNextSessionTiming } from '../lib/recovery'
+import { checkJJOverlapForWorkout } from '../lib/motorIntegrado'
 import { LIFT_LABEL } from '../lib/liftLabels'
 import { Card, PrimaryButton, SectionTitle } from '../components/ui'
 import { CycleBanner } from '../components/CycleBanner'
@@ -18,11 +19,12 @@ function formatVolume(v: number): string {
 }
 
 export function RegistrarPage() {
-  const { program, workouts, schedule, anamnese, periodizacaoModel, upsertWorkout } = useData()
+  const { program, workouts, schedule, anamnese, jjSessions, periodizacaoModel, upsertWorkout } = useData()
   const { showToast } = useToast()
 
   const today = todayISO()
   const existing = workouts.find((w) => w.date === today)
+  const jjOverlap = checkJJOverlapForWorkout(jjSessions, today)
 
   const [selectedDay, setSelectedDay] = useState<Day>(existing?.day ?? todayWeekdayDay(schedule))
   const [weightExpanded, setWeightExpanded] = useState(true)
@@ -179,6 +181,13 @@ export function RegistrarPage() {
       <h1 className="mb-4 text-xl font-bold">Registrar treino</h1>
 
       <CycleBanner ciclo={ciclo} />
+
+      {jjOverlap && (
+        <Card className="mb-4 border-amber-600 bg-amber-500/10">
+          <p className="text-sm font-semibold text-amber-300">⚠ Motor integrado</p>
+          <p className="mt-1 text-xs text-amber-200/90">{jjOverlap.message}</p>
+        </Card>
+      )}
 
       {!workout.finished && suggestionsByExerciseId.size > 0 && (
         <div className="mb-4">

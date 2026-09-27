@@ -14,6 +14,7 @@ import { GroupedExerciseChecklist } from '../components/GroupedExerciseChecklist
 import { GENERAL_MOBILITY_GROUPS, GENERAL_MOBILITY_SOURCE } from '../lib/generalMobility'
 import { PERIODIZACAO_DESC, PERIODIZACAO_LABEL, type PeriodizacaoModel } from '../lib/periodization'
 import { formatDateBR, diffDays, todayISO } from '../lib/dates'
+import { buildRecommendation } from '../lib/profileRecommendation'
 
 const PERIODIZACAO_OPTIONS: PeriodizacaoModel[] = ['classica', 'linear_invertida', 'ondulada']
 
@@ -66,9 +67,30 @@ export function ProgramaPage() {
     showToast('Treino gerado aplicado com sucesso')
   }
 
+  const recommendation = anamnese.profile ? buildRecommendation(anamnese.profile) : null
+
   return (
     <div className="pb-4">
       <h1 className="mb-4 text-xl font-bold">Programa</h1>
+
+      {recommendation && (
+        <Card className="mb-6 border-teal-700/60 bg-teal-500/5">
+          <p className="mb-1 font-semibold text-teal-300">Seu perfil</p>
+          <p className="text-xs text-slate-300">{recommendation.resumo}</p>
+          {recommendation.periodizacaoRecomendada && recommendation.periodizacaoRecomendada !== periodizacaoModel && (
+            <button
+              type="button"
+              onClick={() => {
+                savePeriodizacaoModel(recommendation.periodizacaoRecomendada!)
+                showToast(`Periodização definida para ${PERIODIZACAO_LABEL[recommendation.periodizacaoRecomendada!]}`)
+              }}
+              className="mt-2 text-xs font-medium text-teal-300 underline decoration-dotted"
+            >
+              usar periodização recomendada ({PERIODIZACAO_LABEL[recommendation.periodizacaoRecomendada]})
+            </button>
+          )}
+        </Card>
+      )}
 
       <Card className="mb-6 border-emerald-700/60 bg-emerald-500/5">
         <p className="mb-1 font-semibold text-emerald-300">Não tem um treino pronto?</p>

@@ -81,13 +81,60 @@ export interface AnamneseBaseline {
 export type ObjetivoTreino = 'forca' | 'hipertrofia' | 'resistencia' | 'emagrecimento' | 'performance_esportiva'
 export type NivelExperiencia = 'iniciante' | 'intermediario' | 'avancado'
 
-/** Perfil do atleta — objetivo de treino, esporte praticado e nível de experiência.
- * Usado para dar orientação tecnicamente fundamentada (faixa de reps/RPE) quando ainda
- * não existe nenhuma carga de referência para um exercício. */
+/** Bloco B da anamnese — qual "motor" de decisão rege a experiência do atleta:
+ * só jiu-jitsu, só musculação, ou os dois juntos (motor integrado, com prioridade
+ * de recuperação entre os dois). Não remove nem esconde nenhuma aba do app — só
+ * direciona recomendações e o alerta de sobreposição de volume no mesmo dia. */
+export type MotorPrincipal = 'jiu_jitsu' | 'musculacao' | 'combinacao'
+
+/** Bloco A — tempo de prática consistente de atividade física, usado como um dos
+ * sinais de nível (junto com a auto-classificação iniciante/intermediário/avançado). */
+export type TempoPratica = 'sedentario' | 'ate_6_meses' | '6_meses_a_2_anos' | '2_anos_ou_mais'
+
+export type Sexo = 'masculino' | 'feminino'
+export type NivelEstresse = 'baixo' | 'medio' | 'alto'
+
+/** Articulações do checklist de lesão da anamnese (Bloco A) — lista própria, distinta
+ * de JointTag (exerciseLibrary.ts), que serve pra filtrar exercícios no gerador. */
+export type Articulacao = 'ombro' | 'joelho' | 'coluna' | 'quadril' | 'tornozelo' | 'punho'
+
+/** Bloco C — específico de jiu-jitsu, só relevante quando motorPrincipal inclui jiu-jitsu. */
+export interface JJAnamnese {
+  faixa?: string
+  compete: boolean
+  categoriaPeso?: string
+  frequenciaSemanal?: number
+}
+
+/** Perfil do atleta — anamnese completa (Blocos A-E). Só `motorPrincipal` e `nivel`
+ * são obrigatórios pra função; o resto é opcional e vai enriquecendo a recomendação
+ * conforme o atleta preenche. */
 export interface AthleteProfile {
+  /** Bloco B — qual motor rege a experiência. */
+  motorPrincipal: MotorPrincipal
+  /** Objetivo específico de musculação — só relevante quando motorPrincipal inclui musculação. */
   objetivo: ObjetivoTreino
   esporte?: string
   nivel: NivelExperiencia
+  // Bloco A — identificação e saúde geral
+  idade?: number
+  sexo?: Sexo
+  pesoCorporalKg?: number
+  alturaCm?: number
+  lesoes?: Articulacao[]
+  lesoesObs?: string
+  tempoPratica?: TempoPratica
+  // Bloco C — jiu-jitsu
+  jj?: JJAnamnese
+  // Bloco D — musculação
+  diasDisponiveisSemana?: number
+  tempoPorSessaoMin?: number
+  equipamentoDisponivel?: import('./exerciseLibrary').Equipment
+  gruposPrioritarios?: import('./exerciseLibrary').MuscleGroup[]
+  // Bloco E — rotina e recuperação
+  horasSonoMedia?: number
+  nivelEstresse?: NivelEstresse
+  sinaisOvertraining?: boolean
 }
 
 /** Cargas de partida declaradas pelo atleta antes de qualquer sessão registrada — usadas
