@@ -39,9 +39,9 @@ const ACWR_ZONE: Record<string, { label: string; color: string }> = {
 }
 
 export function PainelPage() {
-  const { workouts, jjSessions, cycleStartForca, saveCycleStartForca } = useData()
+  const { workouts, jjSessions, anamnese, cycleStartForca, saveCycleStartForca, periodizacaoModel, programUpdatedAt } = useData()
 
-  const alerts = buildRegulationAlerts(workouts)
+  const alerts = buildRegulationAlerts(workouts, programUpdatedAt)
   const acwr = computeACWR(workouts)
   const acwrZone = ACWR_ZONE[acwr.zone]
   const weeks = weeklyVolumes(workouts).slice(-8)
@@ -49,8 +49,8 @@ export function PainelPage() {
   const today = todayISO()
   const autoCicloStart = workouts.length > 0 ? [...workouts].map((w) => w.date).sort()[0] : null
   const cicloStart = cycleStartForca ?? autoCicloStart
-  const ciclo = getCicloOndulatorio(cicloStart, today)
-  const liftSuggestions = (['agachamento', 'supino', 'terra'] as LiftCategory[]).map((cat) => suggestMainLift(cat, workouts, ciclo))
+  const ciclo = getCicloOndulatorio(cicloStart, today, periodizacaoModel)
+  const liftSuggestions = (['agachamento', 'supino', 'terra'] as LiftCategory[]).map((cat) => suggestMainLift(cat, workouts, ciclo, anamnese))
 
   const exerciseNames = listLoggedExerciseNames(workouts)
   const gas = gasTrend(jjSessions)

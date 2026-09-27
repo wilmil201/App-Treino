@@ -4,6 +4,7 @@ import { getBestRecord, getLastFeedbackForCategory, getLiftSessions } from './ca
 import { getExerciseSessions, getLastFeedbackForExercise } from './exerciseHistory'
 import { estimateOneRepMax, loadForTarget } from './rpeChart'
 import { GUIDANCE_BY_OBJETIVO, REP_RANGE_BY_OBJETIVO, OBJETIVO_RPE_CENTER, OBJETIVO_LABEL, NIVEL_HINT, clamp } from './objetivoGuidance'
+import { RPE_OFFSET_BY_MODEL, type PeriodizacaoModel } from './periodization'
 
 function round25(v: number): number {
   return Math.round(v / 2.5) * 2.5
@@ -11,11 +12,6 @@ function round25(v: number): number {
 
 /** Motivos de não-conclusão que indicam sobrecarga real (a carga/volume estava acima do que o corpo aguentava). */
 const OVERLOAD_MOTIVOS = new Set(['fadiga', 'carga_pesada'])
-
-/** Deslocamento da onda ondulatória de 4 semanas em relação ao centro de RPE do
- * objetivo — mesma forma de onda pra todo objetivo (acumulação leve → moderada →
- * intensificação → deload), só recentrada. */
-const WEEK_RPE_OFFSET: Record<1 | 2 | 3 | 4, number> = { 1: -1, 2: -0.25, 3: 0.25, 4: -2 }
 
 /** Reps-alvo real do atleta, puxado gentilmente pra dentro da faixa do objetivo quando
  * ele sai muito fora dela — nunca inventa um esquema, só evita ficar preso num número
@@ -43,17 +39,19 @@ function buildCalibrationNote(profile: AthleteProfile | undefined): string {
   } e suba a cada série até a última ficar exigente mas com técnica limpa — mire ${g.repRange} repetições, RPE ${g.rpeRange}, descanso de ${g.descanso}. Anote a carga usada: a próxima sugestão parte daí.`
 }
 
-/** RPE alvo numérico de cada semana do ciclo ondulatório quando não há objetivo declarado
- * (fallback universal — some assim que a anamnese tiver o objetivo preenchido). */
-const WEEK_TARGET_RPE_FALLBACK: Record<1 | 2 | 3 | 4, number> = { 1: 7, 2: 7.75, 3: 8.25, 4: 6 }
+/** RPE alvo numérico de cada semana quando não há objetivo declarado (fallback
+ * universal — some assim que a anamnese tiver o objetivo preenchido). Usa a forma
+ * do modelo Clássico como base neutra. */
+const WEEK_TARGET_RPE_FALLBACK: Record<1 | 2 | 3 | 4, number> = { 1: 7, 2: 7.75, 3: 8.5, 4: 6 }
 
-/** RPE-alvo da semana do ciclo ondulatório, centrado no objetivo declarado na anamnese
- * (força pede RPE mais alto que resistência, por exemplo) — sem objetivo, usa a onda
- * universal de antes. */
-function resolveTargetRpe(week: 1 | 2 | 3 | 4, objetivo: ObjetivoTreino | undefined): number {
+/** RPE-alvo da semana, centrado no objetivo declarado na anamnese (força pede RPE
+ * mais alto que resistência, por exemplo) e moldado pelo modelo de periodização
+ * escolhido (Clássica/Linear invertida/Ondulada — ver periodization.ts). Sem
+ * objetivo, usa a onda universal de antes. */
+function resolveTargetRpe(week: 1 | 2 | 3 | 4, objetivo: ObjetivoTreino | undefined, model: PeriodizacaoModel): number {
   if (!objetivo) return WEEK_TARGET_RPE_FALLBACK[week]
-  if (week === 4) return 6 // deload é sempre leve, independente de objetivo
-  return clamp(OBJETIVO_RPE_CENTER[objetivo] + WEEK_RPE_OFFSET[week], 6, 9.5)
+  if (week === 4) return 6 // deload é sempre leve, independente de objetivo ou modelo
+  return clamp(OBJETIVO_RPE_CENTER[objetivo] + RPE_OFFSET_BY_MODEL[model][week], 6, 9.5)
 }
 
 /** RPE assumido ao converter a carga declarada na anamnese em 1RM estimado — a
@@ -72,6 +70,9 @@ export interface LiftSuggestion {
   isCalibration?: boolean
   isDeload: boolean
   suggestedLoad: number | null
+  /** Intervalo de descanso recomendado entre séries, pelo objetivo declarado — uma das
+   * 5 variáveis agudas de treino (Stoppani), não só orientação de calibração inicial. */
+  descanso?: string
   /** Reps-alvo do cálculo — sempre o número de reps que o atleta realmente faz nesse levantamento (última sessão ou anamnese), nunca um esquema inventado. */
   reps?: number
   note: string
@@ -106,7 +107,8 @@ export function suggestMainLift(category: LiftCategory, workouts: Workout[], cic
   const sessions = getLiftSessions(workouts, category)
   const lastFeedback = getLastFeedbackForCategory(workouts, category)
   const objetivo = anamnese?.profile?.objetivo
-  const targetRpe = resolveTargetRpe(ciclo.semana, objetivo)
+  const targetRpe = resolveTargetRpe(ciclo.semana, objetivo, ciclo.model)
+  const descanso = objetivo ? GUIDANCE_BY_OBJETIVO[objetivo].descanso : undefined
 
   const bestRecord = getBestRecord(workouts, category)
   const baseline = anamnese?.mainLifts[category]
@@ -133,6 +135,7 @@ export function suggestMainLift(category: LiftCategory, workouts: Workout[], cic
       isDeload: ciclo.isDeload,
       suggestedLoad,
       reps: targetReps,
+      descanso,
       note: `1RM estimado: ${Math.round(oneRepMax)}kg (baseado na sua ficha de anamnese: ${baseline!.load}kg x${baseline!.reps}). Semana ${
         ciclo.semana
       }/4${ciclo.isDeload ? ' (deload)' : ''}: carga calculada para ${targetReps} reps @ RPE ${
@@ -160,7 +163,7 @@ export function suggestMainLift(category: LiftCategory, workouts: Workout[], cic
   if (ciclo.isDeload) {
     // Camada de segurança extra no deload: nunca ultrapassa a última carga real usada.
     suggestedLoad = Math.min(suggestedLoad, last.topSet.load)
-    return { category, hasHistory: true, isDeload: true, suggestedLoad, reps: targetReps, note, basedOn }
+    return { category, hasHistory: true, isDeload: true, suggestedLoad, reps: targetReps, descanso, note, basedOn }
   }
 
   const rpe10naFalha = (category === 'agachamento' || category === 'terra') && last.topSet.rpe >= 10
@@ -187,7 +190,7 @@ export function suggestMainLift(category: LiftCategory, workouts: Workout[], cic
     note = `${oneRepMaxSource}. Sessão anterior limpa (sem sobrecarga, sem dor) — aplicando progressão mínima sobre os ${last.topSet.load}kg da última vez.`
   }
 
-  return { category, hasHistory: true, isDeload: false, suggestedLoad, reps: targetReps, note, basedOn }
+  return { category, hasHistory: true, isDeload: false, suggestedLoad, reps: targetReps, descanso, note, basedOn }
 }
 
 export interface AccessorySuggestion {
@@ -196,6 +199,8 @@ export interface AccessorySuggestion {
   isCalibration?: boolean
   suggestedLoad: number | null
   reps?: number
+  /** Intervalo de descanso recomendado entre séries, pelo objetivo declarado. */
+  descanso?: string
   note: string
   basedOn?: { date: string; load: number; reps: number; rpe: number }
 }
@@ -204,6 +209,7 @@ export interface AccessorySuggestion {
  * hipertrofia geral é o default mais razoável pra trabalho acessório sem contexto. */
 const DEFAULT_ACCESSORY_RANGE: [number, number] = [8, 12]
 const DEFAULT_ACCESSORY_RPE_CENTER = 8
+const DEFAULT_ACCESSORY_DESCANSO = GUIDANCE_BY_OBJETIVO.hipertrofia.descanso
 
 /**
  * Dupla progressão real: dentro da faixa de reps do objetivo, primeiro sobe reps
@@ -251,6 +257,7 @@ export function suggestAccessory(exerciseName: string, workouts: Workout[], anam
   const sessions = getExerciseSessions(workouts, exerciseName)
   const lastFeedback = getLastFeedbackForExercise(workouts, exerciseName)
   const objetivo = anamnese?.profile?.objetivo
+  const descanso = objetivo ? GUIDANCE_BY_OBJETIVO[objetivo].descanso : DEFAULT_ACCESSORY_DESCANSO
 
   if (sessions.length === 0) {
     const baseline = anamnese?.accessories[norm(exerciseName)]
@@ -261,6 +268,7 @@ export function suggestAccessory(exerciseName: string, workouts: Workout[], anam
       hasHistory: true,
       suggestedLoad: baseline.load,
       reps: baseline.reps,
+      descanso,
       note: `Baseado na sua ficha de anamnese (${baseline.load}kg x${baseline.reps}). Assim que você registrar uma sessão real, a sugestão passa a se basear nela.`,
     }
   }
@@ -274,6 +282,7 @@ export function suggestAccessory(exerciseName: string, workouts: Workout[], anam
         hasHistory: true,
         suggestedLoad: last.load,
         reps: last.reps,
+        descanso,
         note: `Você não completou as séries planejadas na última sessão (${
           lastFeedback.feedback.motivo === 'fadiga' ? 'fadiga' : 'carga pesada'
         }). Mantenha a mesma carga e reps.`,
@@ -285,6 +294,7 @@ export function suggestAccessory(exerciseName: string, workouts: Workout[], anam
         hasHistory: true,
         suggestedLoad: last.load,
         reps: last.reps,
+        descanso,
         note: 'Você relatou dor na última sessão. Mantenha a carga e avalie trocar por um substituto.',
         basedOn,
       }
@@ -292,5 +302,5 @@ export function suggestAccessory(exerciseName: string, workouts: Workout[], anam
   }
 
   const progression = progressAccessory(last, objetivo)
-  return { hasHistory: true, suggestedLoad: progression.load, reps: progression.reps, note: progression.note, basedOn }
+  return { hasHistory: true, suggestedLoad: progression.load, reps: progression.reps, descanso, note: progression.note, basedOn }
 }

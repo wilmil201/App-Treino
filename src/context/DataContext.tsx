@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react'
 import type { Anamnese, JJSession, Program, Workout } from '../lib/types'
 import type { DaySchedule } from '../lib/schedule'
+import type { PeriodizacaoModel } from '../lib/periodization'
 import { storage } from '../lib/storage'
 
 interface DataContextValue {
@@ -12,6 +13,8 @@ interface DataContextValue {
   cycleStartForca: string | null
   cycleStartJiuJitsu: string | null
   competitionDate: string | null
+  periodizacaoModel: PeriodizacaoModel
+  programUpdatedAt: string
   saveProgram: (program: Program) => void
   resetProgram: () => void
   saveSchedule: (schedule: DaySchedule) => void
@@ -22,6 +25,7 @@ interface DataContextValue {
   saveCycleStartForca: (iso: string | null) => void
   saveCycleStartJiuJitsu: (iso: string | null) => void
   saveCompetitionDate: (iso: string | null) => void
+  savePeriodizacaoModel: (model: PeriodizacaoModel) => void
   replaceAll: (data: {
     program?: Program
     workouts?: Workout[]
@@ -31,6 +35,8 @@ interface DataContextValue {
     cycleStartForca?: string | null
     cycleStartJiuJitsu?: string | null
     competitionDate?: string | null
+    periodizacaoModel?: PeriodizacaoModel
+    programUpdatedAt?: string
   }) => void
 }
 
@@ -45,15 +51,19 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [cycleStartForca, setCycleStartForca] = useState<string | null>(() => storage.getCycleStartForca())
   const [cycleStartJiuJitsu, setCycleStartJiuJitsu] = useState<string | null>(() => storage.getCycleStartJiuJitsu())
   const [competitionDate, setCompetitionDate] = useState<string | null>(() => storage.getCompetitionDate())
+  const [periodizacaoModel, setPeriodizacaoModel] = useState<PeriodizacaoModel>(() => storage.getPeriodizacaoModel())
+  const [programUpdatedAt, setProgramUpdatedAt] = useState<string>(() => storage.getProgramUpdatedAt())
 
   const saveProgram = useCallback((next: Program) => {
     setProgram(next)
     storage.setProgram(next)
+    setProgramUpdatedAt(storage.getProgramUpdatedAt())
   }, [])
 
   const resetProgram = useCallback(() => {
     const fresh = storage.resetProgram()
     setProgram(fresh)
+    setProgramUpdatedAt(storage.getProgramUpdatedAt())
   }, [])
 
   const saveSchedule = useCallback((next: DaySchedule) => {
@@ -107,6 +117,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
     storage.setCompetitionDate(iso)
   }, [])
 
+  const savePeriodizacaoModel = useCallback((model: PeriodizacaoModel) => {
+    setPeriodizacaoModel(model)
+    storage.setPeriodizacaoModel(model)
+  }, [])
+
   const replaceAll = useCallback(
     (data: {
       program?: Program
@@ -117,6 +132,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       cycleStartForca?: string | null
       cycleStartJiuJitsu?: string | null
       competitionDate?: string | null
+      periodizacaoModel?: PeriodizacaoModel
+      programUpdatedAt?: string
     }) => {
       storage.importAll(data)
       if (data.program) setProgram(storage.getProgram())
@@ -127,6 +144,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       if (data.cycleStartForca !== undefined) setCycleStartForca(data.cycleStartForca)
       if (data.cycleStartJiuJitsu !== undefined) setCycleStartJiuJitsu(data.cycleStartJiuJitsu)
       if (data.competitionDate !== undefined) setCompetitionDate(data.competitionDate)
+      if (data.periodizacaoModel !== undefined) setPeriodizacaoModel(data.periodizacaoModel)
+      if (data.programUpdatedAt !== undefined) setProgramUpdatedAt(data.programUpdatedAt)
     },
     [],
   )
@@ -141,6 +160,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       cycleStartForca,
       cycleStartJiuJitsu,
       competitionDate,
+      periodizacaoModel,
+      programUpdatedAt,
       saveProgram,
       resetProgram,
       saveSchedule,
@@ -151,6 +172,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       saveCycleStartForca,
       saveCycleStartJiuJitsu,
       saveCompetitionDate,
+      savePeriodizacaoModel,
       replaceAll,
     }),
     [
@@ -162,6 +184,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       cycleStartForca,
       cycleStartJiuJitsu,
       competitionDate,
+      periodizacaoModel,
+      programUpdatedAt,
       saveProgram,
       resetProgram,
       saveSchedule,
@@ -172,6 +196,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       saveCycleStartForca,
       saveCycleStartJiuJitsu,
       saveCompetitionDate,
+      savePeriodizacaoModel,
       replaceAll,
     ],
   )

@@ -18,7 +18,7 @@ function formatVolume(v: number): string {
 }
 
 export function RegistrarPage() {
-  const { program, workouts, schedule, anamnese, upsertWorkout } = useData()
+  const { program, workouts, schedule, anamnese, periodizacaoModel, upsertWorkout } = useData()
   const { showToast } = useToast()
 
   const today = todayISO()
@@ -52,7 +52,7 @@ export function RegistrarPage() {
   }, [existing, program, day, today])
 
   const cicloStart = workouts.length > 0 ? [...workouts].map((w) => w.date).sort()[0] : null
-  const ciclo = getCicloOndulatorio(cicloStart, today)
+  const ciclo = getCicloOndulatorio(cicloStart, today, periodizacaoModel)
 
   const totalSets = workout.exercises.reduce((sum, ex) => sum + ex.sets.length + (ex.cardioSets?.length ?? 0), 0)
   const totalVolume = workoutVolume(workout)
@@ -66,10 +66,20 @@ export function RegistrarPage() {
         map.set(ex.exerciseId, null)
       } else if (ex.liftCategory) {
         const s = suggestMainLift(ex.liftCategory, workouts, ciclo, anamnese)
-        map.set(ex.exerciseId, s.hasHistory || s.isCalibration ? { suggestedLoad: s.suggestedLoad, reps: s.reps, note: s.note, isCalibration: s.isCalibration } : null)
+        map.set(
+          ex.exerciseId,
+          s.hasHistory || s.isCalibration
+            ? { suggestedLoad: s.suggestedLoad, reps: s.reps, note: s.note, isCalibration: s.isCalibration, descanso: s.descanso }
+            : null,
+        )
       } else {
         const s = suggestAccessory(ex.name, workouts, anamnese)
-        map.set(ex.exerciseId, s.hasHistory || s.isCalibration ? { suggestedLoad: s.suggestedLoad, reps: s.reps, note: s.note, isCalibration: s.isCalibration } : null)
+        map.set(
+          ex.exerciseId,
+          s.hasHistory || s.isCalibration
+            ? { suggestedLoad: s.suggestedLoad, reps: s.reps, note: s.note, isCalibration: s.isCalibration, descanso: s.descanso }
+            : null,
+        )
       }
     }
     return map

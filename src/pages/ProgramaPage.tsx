@@ -12,11 +12,16 @@ import { AnamneseForm } from '../components/AnamneseForm'
 import { UpdateChecker } from '../components/UpdateChecker'
 import { GroupedExerciseChecklist } from '../components/GroupedExerciseChecklist'
 import { GENERAL_MOBILITY_GROUPS, GENERAL_MOBILITY_SOURCE } from '../lib/generalMobility'
+import { PERIODIZACAO_DESC, PERIODIZACAO_LABEL, type PeriodizacaoModel } from '../lib/periodization'
+import { formatDateBR, diffDays, todayISO } from '../lib/dates'
+
+const PERIODIZACAO_OPTIONS: PeriodizacaoModel[] = ['classica', 'linear_invertida', 'ondulada']
 
 const SLOT_TITLE: Record<Day, string> = { dia1: 'Treino 1', dia2: 'Treino 2', dia3: 'Treino 3' }
 
 export function ProgramaPage() {
-  const { program, schedule, anamnese, saveProgram, saveSchedule, saveAnamnese, resetProgram } = useData()
+  const { program, schedule, anamnese, periodizacaoModel, programUpdatedAt, saveProgram, saveSchedule, saveAnamnese, savePeriodizacaoModel, resetProgram } =
+    useData()
   const { showToast } = useToast()
   const [day, setDay] = useState<Day>('dia1')
   const [confirmReset, setConfirmReset] = useState(false)
@@ -111,6 +116,35 @@ export function ProgramaPage() {
           </div>
         </div>
       )}
+
+      <Card className="mb-6 border-amber-700/60 bg-amber-500/5">
+        <p className="mb-1 font-semibold text-amber-300">Modelo de periodização</p>
+        <p className="mb-3 text-xs text-slate-400">
+          Como intensidade e volume evoluem dentro de cada mesociclo de 4 semanas — muda o cálculo de carga em
+          Registrar e Painel. Semana 4 é sempre deload, nos 3 modelos.
+        </p>
+        <div className="space-y-2">
+          {PERIODIZACAO_OPTIONS.map((model) => (
+            <button
+              key={model}
+              type="button"
+              onClick={() => savePeriodizacaoModel(model)}
+              aria-pressed={periodizacaoModel === model}
+              className={`w-full rounded-xl border p-3 text-left ${
+                periodizacaoModel === model ? 'border-amber-500 bg-amber-500/15' : 'border-slate-700 bg-slate-900'
+              }`}
+            >
+              <p className="font-semibold text-slate-100">{PERIODIZACAO_LABEL[model]}</p>
+              <p className="text-xs text-slate-400">{PERIODIZACAO_DESC[model]}</p>
+            </button>
+          ))}
+        </div>
+        <p className="mt-3 text-xs text-slate-500">
+          Programa atual configurado há {Math.floor(diffDays(programUpdatedAt, todayISO()) / 7)} semana(s)
+          {' '}(desde {formatDateBR(programUpdatedAt)}). A cada 4-8 semanas, considere gerar um novo treino ou trocar o
+          estímulo — nenhum programa deve rodar parado indefinidamente.
+        </p>
+      </Card>
 
       <Card className="mb-6 border-violet-700/60 bg-violet-500/5">
         <p className="mb-1 font-semibold text-violet-300">Mobilidade geral (treino de força)</p>

@@ -10,6 +10,7 @@ export interface ExerciseSuggestionView {
   reps?: number
   note: string
   isCalibration?: boolean
+  descanso?: string
 }
 
 interface Props {
@@ -239,6 +240,7 @@ export function ExerciseCard({
               : 'sem sugestão ainda'}
           </p>
           <p className="text-xs text-sky-200/80">{suggestion.note}</p>
+          {suggestion.descanso && <p className="mt-1 text-xs text-sky-300/70">⏱ Descanso entre séries: {suggestion.descanso}</p>}
         </div>
       )}
 

@@ -93,7 +93,27 @@ const LIFT_LABEL: Record<LiftCategory, string> = {
   terra: 'Levantamento terra',
 }
 
-export function buildRegulationAlerts(workouts: Workout[]): Alert[] {
+/**
+ * Alerta de reavaliação de programa — base fisiológica: Síndrome da Adaptação Geral
+ * (Selye, 1936). Nenhum estímulo funciona indefinidamente: fase de alarme → adaptação
+ * → exaustão, se o MESMO estímulo continuar por tempo demais. Todo programa precisa
+ * de uma data de validade; isso não é opcional, é o que evita estagnação/regressão.
+ */
+const SEMANAS_PARA_REAVALIACAO = 6
+
+function checkProgramReassessment(programUpdatedAt: string | undefined, referenceISO: string): Alert | null {
+  if (!programUpdatedAt) return null
+  const semanas = Math.floor(diffDays(programUpdatedAt, referenceISO) / 7)
+  if (semanas < SEMANAS_PARA_REAVALIACAO) return null
+  return {
+    id: 'reavaliacao-programa',
+    level: 'info',
+    title: 'Hora de reavaliar seu programa',
+    message: `Seu programa de força está com a mesma configuração há ${semanas} semanas. Nenhum estímulo funciona pra sempre (Síndrome da Adaptação Geral) — considere gerar um novo treino, trocar de mesociclo/objetivo, ou pelo menos revisar os exercícios em Programa.`,
+  }
+}
+
+export function buildRegulationAlerts(workouts: Workout[], programUpdatedAt?: string): Alert[] {
   const alerts: Alert[] = []
   const categories: LiftCategory[] = ['agachamento', 'supino', 'terra']
 
@@ -141,6 +161,9 @@ export function buildRegulationAlerts(workouts: Workout[]): Alert[] {
   if (deload) alerts.push(deload)
 
   alerts.push(...checkPainFeedback(workouts))
+
+  const reassessment = checkProgramReassessment(programUpdatedAt, todayISO())
+  if (reassessment) alerts.push(reassessment)
 
   return alerts
 }

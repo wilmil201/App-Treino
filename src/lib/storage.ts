@@ -1,6 +1,8 @@
 import type { Anamnese, Program, Workout, JJSession } from './types'
 import { buildDefaultProgram } from './defaultProgram'
 import { DEFAULT_SCHEDULE, type DaySchedule } from './schedule'
+import type { PeriodizacaoModel } from './periodization'
+import { todayISO } from './dates'
 
 const KEYS = {
   program: 'treino:program',
@@ -12,6 +14,8 @@ const KEYS = {
   cycleStartForca: 'treino:cycleStartForca',
   cycleStartJiuJitsu: 'treino:cycleStartJiuJitsu',
   competitionDate: 'treino:competitionDate',
+  periodizacaoModel: 'treino:periodizacaoModel',
+  programUpdatedAt: 'treino:programUpdatedAt',
 } as const
 
 const EMPTY_ANAMNESE: Anamnese = { mainLifts: {}, accessories: {} }
@@ -69,10 +73,12 @@ export const storage = {
   },
   setProgram(program: Program) {
     write(KEYS.program, program)
+    write(KEYS.programUpdatedAt, todayISO())
   },
   resetProgram(): Program {
     const fresh = buildDefaultProgram()
     write(KEYS.program, fresh)
+    write(KEYS.programUpdatedAt, todayISO())
     return fresh
   },
   getWorkouts(): Workout[] {
@@ -126,6 +132,24 @@ export const storage = {
   setCompetitionDate(iso: string | null) {
     write(KEYS.competitionDate, iso)
   },
+  /** Modelo de periodização de força (Clássica/Linear invertida/Ondulada) — ver periodization.ts. */
+  getPeriodizacaoModel(): PeriodizacaoModel {
+    return read<PeriodizacaoModel>(KEYS.periodizacaoModel, 'classica')
+  },
+  setPeriodizacaoModel(model: PeriodizacaoModel) {
+    write(KEYS.periodizacaoModel, model)
+  },
+  /** Data (ISO) da última vez que o programa de força foi editado/gerado — usada pro
+   * alerta de reavaliação (Síndrome da Adaptação Geral: nenhum estímulo deve rodar
+   * indefinidamente sem reavaliação). Se nunca foi carimbada, inicializa em hoje —
+   * evita alertar de imediato instalações/contas já existentes. */
+  getProgramUpdatedAt(): string {
+    const existing = read<string | null>(KEYS.programUpdatedAt, null)
+    if (existing) return existing
+    const now = todayISO()
+    write(KEYS.programUpdatedAt, now)
+    return now
+  },
   exportAll(): {
     version: 1
     exportedAt: string
@@ -137,6 +161,8 @@ export const storage = {
     cycleStartForca: string | null
     cycleStartJiuJitsu: string | null
     competitionDate: string | null
+    periodizacaoModel: PeriodizacaoModel
+    programUpdatedAt: string
   } {
     return {
       version: 1,
@@ -149,6 +175,8 @@ export const storage = {
       cycleStartForca: this.getCycleStartForca(),
       cycleStartJiuJitsu: this.getCycleStartJiuJitsu(),
       competitionDate: this.getCompetitionDate(),
+      periodizacaoModel: this.getPeriodizacaoModel(),
+      programUpdatedAt: this.getProgramUpdatedAt(),
     }
   },
   importAll(data: {
@@ -160,6 +188,8 @@ export const storage = {
     cycleStartForca?: string | null
     cycleStartJiuJitsu?: string | null
     competitionDate?: string | null
+    periodizacaoModel?: PeriodizacaoModel
+    programUpdatedAt?: string
   }) {
     if (data.program) write(KEYS.program, migrateProgram(data.program as unknown as Record<string, unknown>))
     if (data.workouts) write(KEYS.workouts, migrateWorkouts(data.workouts))
@@ -169,5 +199,7 @@ export const storage = {
     if (data.cycleStartForca !== undefined) write(KEYS.cycleStartForca, data.cycleStartForca)
     if (data.cycleStartJiuJitsu !== undefined) write(KEYS.cycleStartJiuJitsu, data.cycleStartJiuJitsu)
     if (data.competitionDate !== undefined) write(KEYS.competitionDate, data.competitionDate)
+    if (data.periodizacaoModel !== undefined) write(KEYS.periodizacaoModel, data.periodizacaoModel)
+    if (data.programUpdatedAt !== undefined) write(KEYS.programUpdatedAt, data.programUpdatedAt)
   },
 }

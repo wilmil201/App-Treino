@@ -1,6 +1,6 @@
 import type { Anamnese, Day, NivelExperiencia, ObjetivoTreino, Program, ProgramExercise } from './types'
 import { DAY_SLOTS } from './schedule'
-import { EQUIPMENT_RANK, EXERCISE_LIBRARY, type Equipment, type JointTag, type MuscleGroup } from './exerciseLibrary'
+import { EQUIPMENT_RANK, EXERCISE_LIBRARY, type Equipment, type JointTag, type LibExercise, type MuscleGroup } from './exerciseLibrary'
 import { generateId } from './id'
 import { ACCESSORY_SETS_BY_OBJETIVO, MAIN_SETS_BY_OBJETIVO, REP_RANGE_BY_OBJETIVO, repSchemeText } from './objetivoGuidance'
 
@@ -67,6 +67,28 @@ const CONDICIONAMENTO_FINISHER: Record<Equipment, { name: string; detail: string
 
 function usable(equipment: Equipment, maxEquipment: Equipment): boolean {
   return EQUIPMENT_RANK[equipment] <= EQUIPMENT_RANK[maxEquipment]
+}
+
+/**
+ * Escolhe um candidato de acessório dentro do grupo muscular do momento.
+ * - Emagrecimento prioriza exercícios compostos (recrutam mais massa muscular,
+ *   mais densidade/gasto calórico por série) sobre isolamento, quando houver opção.
+ * - Entre os candidatos válidos, sorteia em vez de sempre pegar o primeiro da lista —
+ *   evita gerar sempre a mesma seleção de exercícios pro mesmo grupo/equipamento.
+ */
+function pickCandidate(
+  remainingPool: LibExercise[],
+  group: MuscleGroup,
+  usedNames: Set<string>,
+  objetivo: ObjetivoTreino,
+): LibExercise | undefined {
+  let candidates = remainingPool.filter((ex) => ex.group === group && !usedNames.has(ex.name))
+  if (objetivo === 'emagrecimento') {
+    const compostos = candidates.filter((ex) => ex.compound)
+    if (compostos.length > 0) candidates = compostos
+  }
+  if (candidates.length === 0) return undefined
+  return candidates[Math.floor(Math.random() * candidates.length)]
 }
 
 function conflicts(avoid: JointTag[] | undefined, limitacoes: JointTag[]): boolean {
@@ -139,7 +161,7 @@ export function generateProgram(q: Questionnaire, anamnese?: Anamnese): Program 
       guard++
       const group = groups[groupIdx % groups.length]
       groupIdx++
-      const candidate = remainingPool.find((ex) => ex.group === group && !usedNames.has(ex.name))
+      const candidate = pickCandidate(remainingPool, group, usedNames, q.objetivo)
       if (candidate) {
         exercises.push({
           id: generateId('ex'),

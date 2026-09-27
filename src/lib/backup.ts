@@ -29,6 +29,8 @@ export interface ImportedBackup {
   cycleStartForca?: string | null
   cycleStartJiuJitsu?: string | null
   competitionDate?: string | null
+  periodizacaoModel?: import('./periodization').PeriodizacaoModel
+  programUpdatedAt?: string
 }
 
 /** Valida minimamente o formato de um backup antes de sobrescrever os dados locais. */

@@ -1,6 +1,7 @@
 import type { DaySchedule } from './schedule'
 import type { Day } from './types'
 import { todaySlot } from './schedule'
+import { WEEK_DESCRICAO_BY_MODEL, WEEK_SHORT_LABEL_BY_MODEL, type PeriodizacaoModel } from './periodization'
 
 export function todayISO(): string {
   const d = new Date()
@@ -37,25 +38,33 @@ export function weekdayOfISO(iso: string): number {
 
 export interface CicloOndulatorio {
   semana: 1 | 2 | 3 | 4
+  model: PeriodizacaoModel
   rpeAlvo: string
   descricao: string
   isDeload: boolean
 }
 
-const SEMANAS_CICLO: Omit<CicloOndulatorio, 'semana'>[] = [
-  { rpeAlvo: 'RPE 7', descricao: 'Semana 1 · acumulação leve', isDeload: false },
-  { rpeAlvo: 'RPE 7,5–8', descricao: 'Semana 2 · acumulação moderada', isDeload: false },
-  { rpeAlvo: 'RPE 8–8,5', descricao: 'Semana 3 · intensificação', isDeload: false },
-  { rpeAlvo: 'Deload', descricao: 'Semana 4 · deload, reduzir volume', isDeload: true },
-]
-
-export function getCicloOndulatorio(cicloStartISO: string | null, referenceISO: string): CicloOndulatorio {
-  if (!cicloStartISO) {
-    return { semana: 1, ...SEMANAS_CICLO[0] }
-  }
-  const dias = Math.max(0, diffDays(cicloStartISO, referenceISO))
+/**
+ * Mesociclo de 4 semanas — a forma como intensidade/volume evoluem semana a semana
+ * depende do modelo de periodização escolhido (Clássica/Linear invertida/Ondulada,
+ * ver periodization.ts); a semana 4 é sempre deload nos 3 modelos.
+ */
+export function getCicloOndulatorio(
+  cicloStartISO: string | null,
+  referenceISO: string,
+  model: PeriodizacaoModel = 'classica',
+): CicloOndulatorio {
+  const dias = cicloStartISO ? Math.max(0, diffDays(cicloStartISO, referenceISO)) : 0
   const semanaIndex = Math.floor(dias / 7) % 4
-  return { semana: (semanaIndex + 1) as 1 | 2 | 3 | 4, ...SEMANAS_CICLO[semanaIndex] }
+  const semana = (semanaIndex + 1) as 1 | 2 | 3 | 4
+  const isDeload = semana === 4
+  return {
+    semana,
+    model,
+    rpeAlvo: WEEK_SHORT_LABEL_BY_MODEL[model][semana],
+    descricao: WEEK_DESCRICAO_BY_MODEL[model][semana],
+    isDeload,
+  }
 }
 
 export interface Mesociclo {

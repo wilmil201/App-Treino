@@ -1,4 +1,5 @@
 import type { CicloOndulatorio } from '../lib/dates'
+import { PERIODIZACAO_LABEL } from '../lib/periodization'
 
 const SEMANA_STYLES: Record<number, string> = {
   1: 'from-sky-600 to-sky-500',
@@ -12,7 +13,9 @@ export function CycleBanner({ ciclo }: { ciclo: CicloOndulatorio }) {
     <div className={`mb-4 rounded-2xl bg-gradient-to-r p-4 text-white shadow ${SEMANA_STYLES[ciclo.semana]}`}>
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-xs uppercase tracking-wide text-white/80">Ciclo ondulatório · Semana {ciclo.semana}/4</p>
+          <p className="text-xs uppercase tracking-wide text-white/80">
+            Periodização {PERIODIZACAO_LABEL[ciclo.model]} · Semana {ciclo.semana}/4
+          </p>
           <p className="text-lg font-bold">{ciclo.rpeAlvo}</p>
         </div>
         <div className="flex gap-1">
