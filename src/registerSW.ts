@@ -5,6 +5,16 @@
  * sem isso, hosts como o GitHub Pages podem servir uma cópia em cache do
  * service worker por vários minutos e o app parece nunca atualizar.
  *
+ * BUG que isso corrige: o sw.js gerado (workbox generateSW, sem
+ * skipWaiting/clientsClaim habilitados) só ativa uma versão nova quando
+ * recebe `postMessage({type:'SKIP_WAITING'})` — sem isso, o novo worker fica
+ * parado em "waiting" indefinidamente enquanto o PWA continuar aberto (comum
+ * no iOS, que raramente fecha o processo de verdade), `controllerchange`
+ * nunca dispara, e o app parece nunca atualizar mesmo com o deploy
+ * funcionando e o novo sw.js já baixado. `promoteWaitingWorker` é o que
+ * faltava: manda essa mensagem assim que existe um worker esperando, seja
+ * logo após o registro, seja assim que um novo termina de instalar.
+ *
  * Também fazemos polling periódico de atualização (o navegador só checa
  * automaticamente em navegações de página, o que não ajuda muito num PWA
  * instalado que fica aberto) e recarregamos a página assim que o novo
@@ -19,6 +29,10 @@
 
 let currentRegistration: ServiceWorkerRegistration | null = null
 
+function promoteWaitingWorker(registration: ServiceWorkerRegistration) {
+  registration.waiting?.postMessage({ type: 'SKIP_WAITING' })
+}
+
 export function registerServiceWorker() {
   if (!('serviceWorker' in navigator)) return
 
@@ -29,6 +43,15 @@ export function registerServiceWorker() {
       .register(swUrl, { updateViaCache: 'none' })
       .then((registration) => {
         currentRegistration = registration
+        // Pode já existir um worker esperando de uma checagem anterior nesta
+        // mesma sessão — promove na hora, sem esperar o próximo update().
+        promoteWaitingWorker(registration)
+        registration.addEventListener('updatefound', () => {
+          const installing = registration.installing
+          installing?.addEventListener('statechange', () => {
+            if (installing.state === 'installed') promoteWaitingWorker(registration)
+          })
+        })
         registration.update()
         setInterval(() => registration.update(), 60 * 1000)
         document.addEventListener('visibilitychange', () => {
@@ -49,7 +72,10 @@ export function registerServiceWorker() {
 export type UpdateCheckResult = 'updated' | 'up-to-date' | 'unsupported' | 'error'
 
 /** Força uma verificação de atualização agora. Se encontrar uma versão nova, a
- * página recarrega sozinha em seguida (via o listener de controllerchange acima). */
+ * página recarrega sozinha em seguida (via o listener de controllerchange acima).
+ * Precisa chamar `promoteWaitingWorker` explicitamente aqui — só achar a atualização
+ * (`updatefound`) não a ativa sozinha, ela ficaria esperando pra sempre igual ao bug
+ * do registro automático. */
 export async function checkForUpdate(): Promise<UpdateCheckResult> {
   if (!('serviceWorker' in navigator)) return 'unsupported'
   try {
@@ -59,10 +85,16 @@ export async function checkForUpdate(): Promise<UpdateCheckResult> {
     let found = false
     const onUpdateFound = () => {
       found = true
+      const installing = registration.installing
+      installing?.addEventListener('statechange', () => {
+        if (installing.state === 'installed') promoteWaitingWorker(registration)
+      })
     }
     registration.addEventListener('updatefound', onUpdateFound)
 
     await registration.update()
+    // Já pode haver um worker esperando de uma checagem anterior — promove já.
+    promoteWaitingWorker(registration)
     await new Promise((resolve) => setTimeout(resolve, 2000))
 
     registration.removeEventListener('updatefound', onUpdateFound)

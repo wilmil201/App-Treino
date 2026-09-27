@@ -55,6 +55,14 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
         navigateFallback: 'index.html',
         cleanupOutdatedCaches: true,
+        // Sem isso, um service worker novo instala mas fica "esperando" pra sempre
+        // enquanto o PWA continuar aberto (comum no iOS) — nada nunca manda ele
+        // assumir, e o app parece nunca atualizar mesmo com o deploy funcionando e
+        // o novo sw.js já baixado. skipWaiting+clientsClaim fazem a versão nova
+        // assumir sozinha assim que termina de instalar, sem depender de nenhuma
+        // lógica do lado do cliente rodar na hora certa.
+        skipWaiting: true,
+        clientsClaim: true,
       },
       devOptions: {
         enabled: true,
